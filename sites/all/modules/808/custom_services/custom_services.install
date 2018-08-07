@@ -1,0 +1,173 @@
+<?php
+/**
+ * Implements hook_schema().
+ */
+function custom_services_schema() {
+    $schema['api_app_version'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => t('Primary Key : id'),
+            ),
+            'vid' => array(
+                'type' => 'varchar',
+                'length' => 40,
+                'not null' => TRUE,
+                'default' => '',
+                'description' => t('Unique Version of app'),
+            ),
+            'description' => array(
+                'type' => 'text',
+                'not null' => False,
+                'description' => t('Description about this version'),
+            ),
+            'force_update' => array(
+                'type' => 'int',
+                'not null' => False,
+                'default' => 0,
+                'description' => t('This version should update'),
+            ),
+            'update_link' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => False,
+                'default' => '',
+                'description' => t('This link of new version'),
+            ),
+            'ebook_key' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => False,
+                'default' => '',
+                'description' => t('key code for decrypt e-books'),
+            ),
+            'app_type' => array(
+                'type' => 'varchar',
+                'length' => 40,
+                'not null' => TRUE,
+                'default' => '',
+                'description' => t('The type of apps'),
+            ),
+            'created' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+                'description' => 'Timestamp for when new version was created.',
+            ),
+        ),
+
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'unique_fields' => array('vid' , 'app_type'),
+        ),
+    );
+
+    return $schema;
+}
+
+
+/**
+ * Create new database table {api_code_version}.
+ */
+function custom_services_update_7102() {
+    $schema['api_code_version'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => t('Primary Key : id'),
+            ),
+            'url' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+                'default' => '',
+                'description' => t('url api'),
+            ),
+            'source_name' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'default' => '',
+                'description' => t('The name of the request sender'),
+            ),
+            'version' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => True,
+                'default' => '',
+                'description' => t('The version number'),
+            ),
+            'last_function' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => TRUE,
+                'default' => '',
+                'description' => t('The name of the last function that is compatible for this version'),
+            ),
+            'created' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+                'description' => 'Timestamp for when new version was created.',
+            ),
+        ),
+
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'unique_fields' => array('url' , 'source_name' , 'version'),
+        ),
+    );
+    db_create_table('api_code_version', $schema['api_code_version']);
+}
+
+/**
+ * Add description field to {api_code_version} table.
+ */
+function custom_services_update_7103() {
+    $newCol = array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'description' => "description",
+    );
+    db_add_field('api_code_version', 'description', $newCol);
+}
+function custom_services_update_7104() {
+    $newCol = array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => True,
+        'default' => '',
+        'description' => t('The method of the request'),
+    );
+    db_add_field('api_code_version', 'method', $newCol);
+}
+
+/*
+ * Implementation of hook_install()
+*/
+function custom_services_install() {
+    $success = drupal_install_schema('custom_services');
+    if ($success) {
+        drupal_set_message(st('custom_services module installed successfully.'));
+    }
+    else {
+        drupal_set_message(st('The installation of custom_services module failed.'), 'error');
+    }
+}
+
+/*
+ * Implementation of hook_uninstall()
+*/
+function custom_services_uninstall() {
+    $success = drupal_uninstall_schema('custom_services');
+    if ($success) {
+        drupal_set_message(st('custom_services module uninstalled successfully.'));
+    }
+    else {
+        drupal_set_message(st('The uninstall of custom_services module failed.'), 'error');
+    }
+}
