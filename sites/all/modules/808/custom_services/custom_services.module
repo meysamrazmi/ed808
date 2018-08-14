@@ -5,643 +5,42 @@
 
 function custom_services_services_resources(){
 	return array(
-        'versions' => array(
-            'operations' => array(
+	    'home' => array(
+	        'operations' => array(
                 'index' => array(
-                    'help' => 'Return all app versions data',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'version_data_resource'),
-                    'callback' => 'version_data_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of this version.',
-                            'source' => array('param' => 'type'),
-                            'optional' => True,
-                            'default' => '',
-                        ),
-                    ),
-                ),
-                'retrieve' => array(
-                    'help' => 'Return data of this version',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'version_data_resource'),
-                    'callback' => 'version_service_resource_retrieve',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'vid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The vid of versions',
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of this version.',
-                            'source' => array('param' => 'type'),
-                            'optional' => False,
-                        ),
-                    ),
-                ),
-                'create' => array(
-                    'help' => 'Insert data of new version',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'version_data_resource'),
-                    'callback' => 'version_service_resource_create',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'The hash of url.',
-                            'source' => 'data',
-                            'optional' => False,
-                        ),
-                    ),
-                ),
-            ),
-            'targeted_actions' => array(
-                'edit' => array(
-                    'help' => 'Return data of this version',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'version_data_resource'),
-                    'callback' => 'version_service_resource_edit',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'vid',
-                            'type' => 'int',
-                            'description' => 'The vid of versions',
-                            'source' => array('path' => 0),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of this version.',
-                            'source' => array('param' => 'type'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'The hash of url.',
-                            'source' => 'data',
-                            'optional' => False,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        'question' => array(
-            'operations' => array(
-                'index' => array(
-                    'help' => 'return all the questions',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'domain',
-                            'type' => 'string',
-                            'description' => 'The domain of list.',
-                            'source' => array('param' => 'domain'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'page',
-                            'type' => 'int',
-                            'description' => 'The page of list.',
-                            'source' => array('param' => 'page'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'retrieve' => array(
-                    'help' => 'Retrieve a question',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_retrieve',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the question to retrieve',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'create' => array(
-                    'help' => 'Create a question',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_create',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'question',
-                            'optional' => FALSE,
-                            'source' => 'data',
-                            'description' => 'The question data to create',
-                            'type' => 'array',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-            'actions' => array(
-                'search' => array(
-                    'help' => 'Search in Questions',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_search',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'value',
-                            'type' => 'string',
-                            'description' => 'a value that used for search',
-                            'source' => array('data' => 'value'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-            'targeted_actions' => array(
-                'edit' => array(
-                    'help' => 'Edit a question',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_edit',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the question to update',
-                        ),
-                        array(
-                            'name' => 'question',
-                            'optional' => FALSE,
-                            'source' => 'data',
-                            'description' => 'The question data to update',
-                            'type' => 'array',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'delete' => array(
-                    'help' => 'Delete a question',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_delete',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the question to update',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'follow' => array(
-                    'help' => 'Follow a question',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_follow',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the question to follow',
-                        ),
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'Follow or unfollow data',
-                            'source' => 'data',
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'vote' => array(
-                    'help' => 'Vote a question',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'question_resource'),
-                    'callback' => 'question_resource_vote',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the question to vote',
-                        ),
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'Vote up or down',
-                            'source' => 'data',
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-            'relationships' => array(
-            ),
-        ),
-		'pedia' => array(
-		    'operations' => array(
-		        'index' => array(
-                    'help' => 'return all pedia',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'pedia_resource'),
-                    'callback' => 'pedia_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'page',
-                            'type' => 'int',
-                            'description' => 'The page of list.',
-                            'source' => array('param' => 'page'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-		        'retrieve' => array(
-                    'help' => 'Retrieve a pedia',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'pedia_resource'),
-                    'callback' => 'pedia_resource_retrieve',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the pedia to retrieve',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-		    'actions' => array(
-                'search' => array(
-                    'help' => 'Search in Pedia',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'pedia_resource'),
-                    'callback' => 'pedia_resource_search',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'value',
-                            'type' => 'string',
-                            'description' => 'a value that used for search',
-                            'source' => array('data' => 'value'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-		    'targeted_actions' => array(),
-		    'relationships' => array(
-		        'advisors' => array(
-                    'help' => 'List of advisors of the pedia',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'pedia_resource'),
-                    'callback' => 'pedia_resource_advisors_list',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the pedia for getting its advisors',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-		'news' => array(
-		    'operations' => array(
-                'index' => array(
-                    'help' => 'return the news',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'news_resource'),
-                    'callback' => 'news_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'domain',
-                            'type' => 'string',
-                            'description' => 'The domain of list.',
-                            'source' => array('param' => 'domain'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'page',
-                            'type' => 'int',
-                            'description' => 'The page of list.',
-                            'source' => array('param' => 'page'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
 
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
                 ),
-                'retrieve' => array(
-                'help' => 'Retrieve a news',
-                'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'news_resource'),
-                'callback' => 'news_resource_retrieve',
-                'access callback' => 'user_access',
-                'access arguments' => array('access content'),
-                'access arguments append' => FALSE,
-                'args' => array(
-                    array(
-                        'name' => 'hash',
-                        'type' => 'string',
-                        'description' => 'The hash of url.',
-                        'source' => array('param' => 'hash'),
-                        'optional' => False,
-                    ),
-                    array(
-                        'name' => 'nid',
-                        'optional' => FALSE,
-                        'source' => array('path' => 0),
-                        'type' => 'int',
-                        'description' => 'The nid of the pedia to retrieve',
-                    ),
-                    array(
-                        'name' => 'version',
-                        'type' => 'int',
-                        'description' => 'The version of app.',
-                        'source' => array('param' => 'version'),
-                        'optional' => TRUE,
-                        'default value' => 0,
-                    ),
-                ),
-            ),
-            ),
+            )
         ),
         'user' => array(
+            'operations' => array(
+                'update' => array(
+                    'help' => 'Update a user',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_update_data',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'optional' => FALSE,
+                            'source' => 'data',
+                            'description' => 'The profile data to update',
+                            'type' => 'array',
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'The uid of the user',
+                        ),
+                    ),
+                ),
+            ),
             'actions' => array(
-                'login2' => array(
+                'login' => array(
                     'help' => 'Login a user for a new session',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
                     'callback' => 'user_resource_login',
@@ -650,37 +49,15 @@ function custom_services_services_resources(){
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
+                            'name' => 'data',
+                            'type' => 'array',
                             'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
+                            'source' => 'data',
                             'optional' => False,
-                        ),
-                        array(
-                            'name' => 'username_email',
-                            'type' => 'string',
-                            'description' => 'A valid username',
-                            'source' => array('data' => 'username_email'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'password',
-                            'type' => 'string',
-                            'description' => 'A valid password',
-                            'source' => array('data' => 'password'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
                         ),
                     ),
                 ),
-                'register2' => array(
+                'register' => array(
                     'help' => 'Create a new user',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
                     'callback' => 'user_resource_register',
@@ -689,26 +66,11 @@ function custom_services_services_resources(){
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
                             'name' => 'data',
                             'type' => 'array',
-                            'description' => 'New user data',
+                            'description' => 'The hash of url.',
                             'source' => 'data',
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
+                            'optional' => False,
                         ),
                     ),
                 ),
@@ -745,165 +107,47 @@ function custom_services_services_resources(){
                     ),
                 ),
             ),
-            'targeted_actions' => array(
-                'edit_profile' => array(
-                    'help' => 'Edit profile',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_resource_edit_profile',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'uid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The uid of the user',
-                        ),
-                        array(
-                            'name' => 'data',
-                            'optional' => FALSE,
-                            'source' => 'data',
-                            'description' => 'The profile data to update',
-                            'type' => 'array',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'edit_user' => array(
-                    'help' => 'Edit user data',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_resource_edit_data',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'uid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The uid of the user',
-                        ),
-                        array(
-                            'name' => 'data',
-                            'optional' => FALSE,
-                            'source' => 'data',
-                            'description' => 'The profile data to update',
-                            'type' => 'array',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
             'relationships' => array(
-                'purchased_products' => array(
-                    'help' => 'list of product that the user bought',
+                'information' => array(
+                    'help' => 'Return user`s data',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_resource_purchased_products_list',
+                    'callback' => 'user_resource_information',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
                         ),
                         array(
                             'name' => 'uid',
                             'optional' => FALSE,
                             'source' => array('path' => 0),
                             'type' => 'int',
-                            'description' => 'The uid of the user for getting list',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'profile' => array(
-                    'help' => 'Return user`s profile data',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_profile_data',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'uid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The uid of the user for getting profile data',
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
+                            'description' => 'The uid of the user',
                         ),
                     ),
                 ),
                 'nav_bar_info' => array(
                     'help' => 'Return user`s data for nav bar',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_nav_bar_info',
+                    'callback' => 'user_resource_nav_bar_info',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
                         ),
                         array(
                             'name' => 'login',
@@ -912,170 +156,140 @@ function custom_services_services_resources(){
                             'type' => 'string',
                             'description' => 'Just for create url',
                         ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
                     ),
                 ),
             ),
         ),
-        'content' => array(
+        'latin_contents' => array(
             'operations' => array(
                 'index' => array(
-                    'help' => 'return custom content list',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'content_resource'),
-                    'callback' => 'content_resource_index',
+                    'help' => 'return all contents',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
+                    'callback' => 'latin_contents_resource_index',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of product.',
-                            'source' => array('param' => 'type'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'sort',
-                            'type' => 'string',
-                            'description' => 'Sort of the list.',
-                            'source' => array('param' => 'sort'),
-                            'optional' => True,
-                            'default value' => 'last'
-                        ),
-                        array(
-                            'name' => 'filter',
+                            'name' => 'parameter',
                             'type' => 'array',
-                            'description' => 'The language of list.',
-                            'source' => array('param' => 'filter'),
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
                             'optional' => True,
-                            'default value' => array()
-                        ),
-                        array(
-                            'name' => 'search_value',
-                            'type' => 'string',
-                            'description' => 'The language of list.',
-                            'source' => array('param' => 'search_value'),
-                            'optional' => True,
-                            'default value' => 'last'
-                        ),
-                        array(
-                            'name' => 'page',
-                            'type' => 'int',
-                            'description' => 'The page of list.',
-                            'source' => array('param' => 'page'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                        array(
-                            'name' => 'source_name',
-                            'type' => 'string',
-                            'description' => 'The name of sender source.',
-                            'source' => array('param' => 'source'),
-                            'optional' => TRUE,
-                            'default value' => "android",
+                            'default' => array()
                         ),
                     ),
                 ),
                 'retrieve' => array(
-                    'help' => 'return a content data',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'content_resource'),
-                    'callback' => 'content_resource_retrieve',
+                    'help' => 'return a contents',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
+                    'callback' => 'latin_contents_resource_retrieve',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
                         ),
                         array(
                             'name' => 'nid',
-                            'type' => 'string',
-                            'description' => 'The type of product.',
-                            'source' => array('path' => 0),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
                             'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
+                            'description' => 'Nid of content',
+                            'source' => array('path' => 0),
+                            'optional' => FALSE,
                         ),
                     ),
                 ),
-                'create' => array(),
             ),
-            'actions' => array(
-                'search' => array(
-                    'help' => 'Search in E-Books',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'content_resource'),
-                    'callback' => 'content_resource_search',
+            'relationships' => array(
+                'filters' => array(
+                    'help' => 'return filters of a content type',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
+                    'callback' => 'latin_contents_resource_filters',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
                         ),
                         array(
                             'name' => 'type',
                             'type' => 'string',
-                            'description' => 'type of content',
-                            'source' => array('data' => 'type'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'value',
-                            'type' => 'string',
-                            'description' => 'a value that used for search',
-                            'source' => array('data' => 'value'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
+                            'description' => 'Just use for url address.',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                            'default' => "all"
                         ),
                     ),
                 ),
             ),
-            'targeted_actions' => array(),
-            'relationships' => array(),
         ),
+        'tag' => array(
+            'operations' => array(
+                'index' => array(),
+                'retrieve' => array(),
+            ),
+            'relationships' => array(
+                'contents' => array(
+                    'help' => 'return all contents of a tag',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'tag_resource'),
+                    'callback' => 'tag_resource_contents',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'tid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'The tid of the tag',
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        'file' => array(
+            'actions' => array(
+                'upload' => array(
+                    'help' => 'Upload a file with raw data.',
+                    'callback' => 'upload_file',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'The hash of url.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+
+
         'latin_news' => array(
             'operations' => array(
                 'index' => array(
@@ -1146,870 +360,12 @@ function custom_services_services_resources(){
                 ),
             ),
         ),
-        'payment' => array(
-            'operations' => array(
-                'index'  => array(),
-                'retrieve' => array(),
-                'create' => array(),
-            ),
-            'actions' => array(
-                'pre_payment' => array(
-                    'help' => 'request before payment in app',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'payment_resource'),
-                    'callback' => 'pre_payment',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of payment',
-                            'source' => array('data' => 'type'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'price',
-                            'type' => 'int',
-                            'description' => 'The price for charge.',
-                            'source' => array('data' => 'price'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'final_payment' => array(
-                    'help' => 'request for verify payment in app',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'payment_resource'),
-                    'callback' => 'final_payment',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'The data for transaction',
-                            'source' => 'data',
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-            'targeted_actions' => array(),
-            'relationships' => array(
-                'status' => array(
-                    'help' => 'request for status of the transaction',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'payment_resource'),
-                    'callback' => 'get_status',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'id',
-                            'type' => 'int',
-                            'description' => 'The id of transaction',
-                            'source' => array('path' => 0),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-		'order' => array(
-		    'operations' => array(),
-            'actions' => array(
-                'by_user_point' => array(
-                    'help' => 'make order by user point',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'order_resource'),
-                    'callback' => 'make_order_by_user_point',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('data' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of order',
-                            'source' => array('data' => 'type'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'The type of order',
-                            'source' => 'data',
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('data' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-            'targeted_actions' => array(),
-            'relationships' => array(),
-        ),
-        'latin_front_page' => array(
-            'operations' => array(
-                'index' => array(
-                    'help' => 'return all requirements',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_front_page_resource'),
-                    'callback' => 'latin_front_page_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        'latin_contents' => array(
-            'operations' => array(
-                'index' => array(
-                    'help' => 'return all contents',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'latin_contents_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'type_tid',
-                            'type' => 'int',
-                            'description' => 'The type of contents.',
-                            'source' => array('param' => 'type_tid'),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'categories',
-                            'type' => 'string',
-                            'description' => 'The category of a content.',
-                            'source' => array('param' => 'categories'),
-                            'optional' => TRUE,
-                            'default' => '',
-                        ),
-                        array(
-                            'name' => 'page',
-                            'type' => 'int',
-                            'description' => 'The page of list.',
-                            'source' => array('param' => 'page'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-                'retrieve' => array(
-                    'help' => 'return a contents',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'latin_contents_resource_retrieve',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'nid',
-                            'type' => 'int',
-                            'description' => 'Nid of content',
-                            'source' => array('path' => 0),
-                            'optional' => FALSE,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-            'relationships' => array(
-                'filters' => array(
-                    'help' => 'return filters of a content type',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'latin_contents_resource_filters',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'type',
-                            'type' => 'string',
-                            'description' => 'The type of filters',
-                            'source' => array('path' => 0),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'version',
-                            'type' => 'int',
-                            'description' => 'The version of app.',
-                            'source' => array('param' => 'version'),
-                            'optional' => TRUE,
-                            'default value' => 0,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-
-		'advisorlist' => array(
-			'operations' => array(
-				'index' => array(
-					'help' => 'get list of advisor users',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'advisor_list',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE
-				)
-			),
-            'actions' => array(
-                'info' => array(
-                    'help' => 'return list of advisors',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'advisors_info',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'page',
-                            'optional' => TRUE,
-                            'type' => 'int',
-                            'description' => 'The zero-based index of the page to get, defaults to 0.',
-                            'default value' => 0,
-                            'source' => array('data' => 'page'),
-                        )
-                    )
-                ),
-            ),
-		),
-        'taxonomy_term' => array(
-            'relationships' => array(
-                'information' => array(
-                    'help' => 'get expert information',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'taxonomy_information',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'tid',
-                            'optional' => False,
-                            'type' => 'int',
-                            'description' => 'tid',
-                            'source' => array('path' => 0),
-                        )
-                    )
-                ),
-            ),
-        ),
-		'node' => array(
-			'actions' => array(
-				'all_questions' => array(
-					'help' => 'get all questions',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'get_questions',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-						  'name' => 'url',
-						  'optional' => TRUE,
-						  'type' => 'string',
-						  'description' => 'url',
-						  'source' => array('data' => 'url'),
-						  'default value' => "all_questions",
-						),
-						array(
-							'name' => 'page',
-							'optional' => TRUE,
-							'type' => 'int',
-							'description' => 'The zero-based index of the page to get, defaults to 0.',
-							'default value' => 0,
-							'source' => array('data' => 'page'),
-						)
-					)
-				),
-				'my_questions' => array(
-					'help' => 'get users questions',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'get_questions',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-						  'name' => 'url',
-						  'optional' => TRUE,
-						  'type' => 'string',
-						  'description' => 'url',
-						  'source' => array('data' => 'url'),
-						  'default value' => "my_questions",
-						),
-						array(
-							'name' => 'page',
-							'optional' => TRUE,
-							'type' => 'int',
-							'description' => 'The zero-based index of the page to get, defaults to 0.',
-							'default value' => 0,
-							'source' => array('data' => 'page'),
-						)
-					)
-				),
-				'following_questions' => array(
-					'help' => 'get user following questions',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'get_questions',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-						  'name' => 'url',
-						  'optional' => TRUE,
-						  'type' => 'string',
-						  'description' => 'url',
-						  'source' => array('data' => 'url'),
-						  'default value' => "following_questions",
-						),
-						array(
-							'name' => 'page',
-							'optional' => TRUE,
-							'type' => 'int',
-							'description' => 'The zero-based index of the page to get, defaults to 0.',
-							'default value' => 0,
-							'source' => array('data' => 'page'),
-						)
-					)
-				),
-				'my_experts_questions' => array(
-					'help' => 'get related to user experts questions',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'get_questions',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-						  'name' => 'url',
-						  'optional' => TRUE,
-						  'type' => 'string',
-						  'description' => 'url',
-						  'source' => array('data' => 'url'),
-						  'default value' => "my_experts_questions",
-						),
-						array(
-							'name' => 'page',
-							'optional' => TRUE,
-							'type' => 'int',
-							'description' => 'The zero-based index of the page to get, defaults to 0.',
-							'default value' => 0,
-							'source' => array('data' => 'page'),
-						)
-					)
-				),
-                'my_answered_questions' => array(
-                    'help' => 'get related to user experts questions',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'my_answered_questions',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'page',
-                            'optional' => TRUE,
-                            'type' => 'int',
-                            'description' => 'The zero-based index of the page to get, defaults to 0.',
-                            'default value' => 0,
-                            'source' => array('data' => 'page'),
-                        )
-                    )
-                ),
-				'pedia' => array(
-					'help' => 'get all pedia',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'get_pedia',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'page',
-							'optional' => TRUE,
-							'type' => 'int',
-							'description' => 'The zero-based index of the page to get, defaults to 0.',
-							'default value' => 0,
-							'source' => array('data' => 'page'),
-						)
-					)
-				),
-			),
-			
-			'targeted_actions' => array(
-				'edit' => array(
-					'help' => 'edit a node',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'node_edit',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'nid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The nid of the node to for edit',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The question object with updated information',
-							'source' => 'data',
-							'optional' => FALSE,
-						)
-					),
-				),
-				
-				'follow' => array(
-					'help' => 'followand unfollow',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'follow_unfollow',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'nid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The nid of the node to for follow',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The question object with updated information',
-							'source' => 'data',
-							'optional' => FALSE,
-						)
-					),
-				),
-				
-				'vote' => array(
-					'help' => 'question vote up and down',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'question_vote_up_down',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'nid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The nid of the node to for vote',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The question object with updated information',
-							'source' => 'data',
-							'optional' => FALSE,
-						)
-					),
-				),
-			),
-
-            'relationships' => array(
-                'pedia_advisor' => array(
-                    'help' => 'advisors of a pedia',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'pedia_advisor',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args'     => array(
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the pedia that we are getting its advisors',
-                        ),
-                    ),
-                ),
-            ),
-		),
-		'comment' => array(
-			'targeted_actions' => array(
-				'edit' => array(
-					'help' => 'edit a comment',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'comment_edit',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'cid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The cid of the comment to for edit',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The vote action',
-							'source' => 'data',
-							'optional' => FALSE,
-						)
-					),
-				),
-				
-				'vote' => array(
-					'help' => 'comment vote up and down',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'comment_vote_up_down',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'cid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The cid of the comment to for vote',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The vote action',
-							'source' => 'data',
-							'optional' => FALSE,
-						)
-					),
-				),
-				
-				'prove_advisor' => array(
-					'help' => 'prove a comment by advisor',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'comment_prove_by_advisor',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'cid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The cid of the comment to for prove',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The prove action',
-							'source' => 'data',
-							'optional' => True,
-						)
-					),
-				),
-				
-				'prove_asker' => array(
-					'help' => 'prove a comment by asker',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'comment_prove_by_asker',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE,
-					'args' => array(
-						array(
-							'name' => 'cid',
-							'optional' => FALSE,
-							'source' => array('path' => 0),
-							'type' => 'int',
-							'description' => 'The cid of the comment to for prove',
-						),
-						array(
-							'name' => 'data',
-							'type' => 'array',
-							'description' => 'The prove action',
-							'source' => 'data',
-							'optional' => True,
-						)
-					),
-				),
-			),
-		),
-		'slideshow' => array(
-			'operations' => array(
-				'index' => array(
-					'help' => 'get slideshow items of saze page',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'slideshow_items',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE
-				)
-			)
-		),
-		'calendar' => array(
-			'operations' => array(
-				'index' => array(
-					'help' => 'get calendar items of front page',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'calendar_items',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE
-				)
-			)
-		),
-		'front_news' => array(
-			'operations' => array(
-				'index' => array(
-					'help' => 'get front_news items',
-					'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-					'callback' => 'front_news_items',
-					'access callback' => 'user_access',
-					'access arguments' => array('access content'),
-					'access arguments append' => FALSE
-				)
-			)
-		),
-        'file' => array(
-            'actions' => array(
-                'create_file' => array(
-                    'help' => 'Create a file with raw data.',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'create_file',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                ),
-                'upload' => array(
-                    'help' => 'Upload a file with raw data.',
-                    'callback' => 'upload_file',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'hash',
-                            'type' => 'string',
-                            'description' => 'The hash of url.',
-                            'source' => array('param' => 'hash'),
-                            'optional' => False,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        'pbd' => array(
-            'operations' => array(
-                'index' => array(
-                    'help' => 'insert email for latin site',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'latin_insert_email',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'email',
-                            'optional' => False,
-                            'type' => 'string',
-                            'description' => 'the user email',
-                            'source' => array('param' => 'email'),
-                        ),
-                    ),
-                ),
-            ),
-            'actions' => array(
-                'insert_mail' => array(
-                    'help' => 'insert email for latin site',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'custom_services'),
-                    'callback' => 'latin_insert_email',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'email',
-                            'optional' => False,
-                            'type' => 'string',
-                            'description' => 'the user email',
-                            'source' => array('data' => 'email'),
-                        ),
-                    ),
-                ),
-            ),
-        ),
-
-        'test' => array(
-            'operations' => array(
-                'retrieve' => array(
-                    'help' => '',
-                    //'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'test',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'nid',
-                            'optional' => False,
-                            'type' => 'int',
-                            'description' => 'nid',
-                            'source' => array('path' => 0),
-                        ),
-                    ),
-                ),
-            ),
-        ),
 	);
 }
-
-function custom_services_form_alter(&$form, &$form_state, &$form_id){
-    if($form_id == "user_register_form"){
-        $path = arg(0);
-        if(strcmp($path, "android") == 0){
-            unset($form['captcha']);
-        }
-    }
-}
-
-function hash_true($hash , $resource){
-    $new_hash = hash_hmac("sha256" , $resource , "@Civil808Android@Saze808@" , false);
-    if(strcmp($hash, $new_hash) == 0) return true;
-    return false;
-}
-
-function user_information($uids = array()){
-    $query = db_select('users' , 'u');
-    $query->leftJoin('file_managed' , 'f' , 'u.picture = f.fid');
-    $query->fields('u' , array('uid' , 'name' , 'mail'));
-    $query->addField('f' , 'uri' , 'picture');
-    if(!empty($uids)) $query->condition('u.uid', $uids, 'IN');
-    $result = $query->execute()->fetchAll();
-    return $result;
-}
-
-function upload_file($hash) {
-    if(!(hash_true($hash , "file"))) return services_error(t('Failed to access'), 10);
+function upload_file($parameter) {
+    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "file"))) return services_error(t('Failed to access'), 10);
     global $user;
-    if($user == 0) return services_error(t('You should login!'), 13);
+    if($user == 0) return services_error(t('You should be login!'), 13);
     $files =  $_FILES;
     foreach ($files as $file_name => $file_info){
         $_FILES["files"]["name"][$file_name] = $file_info['name'];
@@ -2047,20 +403,8 @@ function upload_file($hash) {
     return $files;
 }
 
-function get_compatible_function_name($url, $method, $source_name , $version){
-    $query = db_select("api_code_version" , "acv")
-        ->fields("acv" , array("last_function"))
-        ->condition("url" , $url)
-        ->condition("method" , $method)
-        ->condition("source_name" , $source_name)
-        ->condition("version" , $version , "<=")
-        ->orderBy("version" , "DESC")
-        ->execute()->fetch();
-
-    if(!empty($query)) return $query->last_function;
-    else return "";
-}
-
-function test($nid){
-    return node_load($nid);
+function hash_true($hash , $resource){
+    $new_hash = hash_hmac("sha256" , $resource , "@Civil808Android@Saze808@" , false);
+    if(strcmp($hash, $new_hash) == 0) return true;
+    return false;
 }

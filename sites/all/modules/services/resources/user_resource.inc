@@ -40,7 +40,7 @@ function _user_resource_definition() {
           ),
         ),
 
-        'update' => array(
+        /*'update' => array(
           'help' => 'Update a user',
           'callback' => '_user_resource_update',
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
@@ -81,7 +81,7 @@ function _user_resource_definition() {
               'optional' => FALSE,
             ),
           ),
-        ),
+        ),*/
         'index' => array(
           'help' => 'List all users',
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
@@ -137,7 +137,7 @@ function _user_resource_definition() {
         ),
       ),
       'actions' => array(
-        'login' => array(
+        /*'login' => array(
           'help' => 'Login a user for a new session',
           'callback' => '_user_resource_login',
           'args' => array(
@@ -158,7 +158,7 @@ function _user_resource_definition() {
           ),
           'access callback' => 'services_access_menu',
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
-        ),
+        ),*/
         'logout' => array(
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
           'help' => 'Logout a user session',
@@ -268,9 +268,9 @@ function _user_resource_definition() {
     ),
   );
 
-  $definition['user']['actions']['register'] = array_merge($definition['user']['operations']['create'], array(
+  /*$definition['user']['actions']['register'] = array_merge($definition['user']['operations']['create'], array(
     'help' => 'Register a user',
-  ));
+  ));*/
 
   return $definition;
 }

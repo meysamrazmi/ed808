@@ -169,7 +169,7 @@ function mdump($var){
 }
 function madump($var){
 	global $user;
-	if($user->uid == 3989){
+	if($user->uid == 2){
  		echo '<pre>';
 		print_r($var);
 		echo '</pre>';
@@ -178,7 +178,7 @@ function madump($var){
 }
 function adump($var){
 	global $user;
-	if($user->uid == 10628){
+	if($user->uid == 4){
  		echo '<pre>';
 		print_r($var);
 		echo '</pre>';
