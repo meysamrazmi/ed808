@@ -2,20 +2,19 @@
 
 /*----------------------------------------index----------------------------------------*/
 function latin_contents_resource_index($parameter){
-    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "latin_contents"))) return services_error(t('Failed to access'), 10);
-
-    return list_of_latin_contents($parameter);
-}
-function list_of_latin_contents($parameter){
     $custom_contents = array();
     $filter = false;
+    if(isset($parameter["search"])){
+        $custom_contents = search_content_by_value($parameter["search"]);
+        $filter = true;
+    }
     if(isset($parameter["type"])) {
         $tids = explode("," , $parameter["type"]);
         $query = db_select("field_data_field_latin_contents_types" , "type");
         $query->fields("type" , array("entity_id"));
         $query->condition("type.field_latin_contents_types_tid" , $tids , "IN");
         $results = $query->execute()->fetchCol();
-        $custom_contents = (empty($custom_contents))? $results : array_intersect($custom_contents , $results);
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
         $filter = true;
     }
     if(isset($parameter["category"])){
@@ -24,7 +23,7 @@ function list_of_latin_contents($parameter){
         $query->fields("category" , array("entity_id"));
         $query->condition("category.field_latin_contents_categories_tid" , $tids , "IN");
         $results = $query->execute()->fetchCol();
-        $custom_contents = (empty($custom_contents))? $results : array_intersect($custom_contents , $results);
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
         $filter = true;
     }
     if(isset($parameter["topic"])){
@@ -33,7 +32,7 @@ function list_of_latin_contents($parameter){
         $query->fields("topic" , array("entity_id"));
         $query->condition("topic.field_latin_contents_topics_tid" , $tids , "IN");
         $results = $query->execute()->fetchCol();
-        $custom_contents = (empty($custom_contents))? $results : array_intersect($custom_contents , $results);
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
         $filter = true;
     }
     if($filter == true && empty($custom_contents)) return ["contents" => array()];
@@ -97,10 +96,25 @@ function list_of_latin_contents($parameter){
     return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField()];
 }
 
+function search_content_by_value($value){
+    $query = db_select("node", "node");
+    $query->fields('node', array('nid'));
+    $query->condition('node.title', '%' . $value . '%', 'LIKE');
+    $nid1 = $query->execute()->fetchCol();
+
+    $query = db_select("field_data_body", "body");
+    $query->addField('body', 'entity_id', 'nid');
+    $query->condition('body.body_value', '%' . $value . '%', 'LIKE');
+    $query->condition('body.entity_type' , 'node');
+    $nid2 = $query->execute()->fetchCol();
+
+    $nids = array_merge($nid1, $nid2);
+
+    return $nids;
+}
+
 /*----------------------------------------retrieve----------------------------------------*/
 function latin_contents_resource_retrieve($parameter , $nid){
-    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "latin_contents"))) return services_error(t('Failed to access'), 10);
-
     $query = db_select("node" , "node");
     $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
     $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.entity_type = 'node' and field_image.delta = '0' ");
@@ -195,8 +209,6 @@ function latin_contents_resource_retrieve($parameter , $nid){
 
 /*-------------------------------------relationships-----------------------------------*/
 function latin_contents_resource_filters($parameter  , $type){
-    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "latin_contents"))) return services_error(t('Failed to access'), 10);
-
     $type = array();
     $category = array();
     $topic = array();
