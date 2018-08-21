@@ -1,155 +1,241 @@
 <?php
 
 /*----------------------------------------index----------------------------------------*/
-function latin_contents_resource_index($hash , $type_tid , $categories, $page , $version){
-    if(!(hash_true($hash , "latin_contents"))) return services_error(t('Failed to access'), 10);
-    if(strcmp($version , "pbd_0") == 0){
-        return list_of_latin_contents($type_tid, $categories, $page);
+function latin_contents_resource_index($parameter){
+    $custom_contents = array();
+    $filter = false;
+    if(isset($parameter["search"])){
+        $custom_contents = search_content_by_value($parameter["search"]);
+        $filter = true;
     }
-    return services_error(t('This version is not supported'), 11);
-}
+    if(isset($parameter["type"])) {
+        $tids = explode("," , $parameter["type"]);
+        $query = db_select("field_data_field_latin_contents_types" , "type");
+        $query->fields("type" , array("entity_id"));
+        $query->condition("type.field_latin_contents_types_tid" , $tids , "IN");
+        $results = $query->execute()->fetchCol();
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
+        $filter = true;
+    }
+    if(isset($parameter["category"])){
+        $tids = explode("," , $parameter["category"]);
+        $query = db_select("field_data_field_latin_contents_categories" , "category");
+        $query->fields("category" , array("entity_id"));
+        $query->condition("category.field_latin_contents_categories_tid" , $tids , "IN");
+        $results = $query->execute()->fetchCol();
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
+        $filter = true;
+    }
+    if(isset($parameter["topic"])){
+        $tids = explode("," , $parameter["topic"]);
+        $query = db_select("field_data_field_latin_contents_topics" , "topic");
+        $query->fields("topic" , array("entity_id"));
+        $query->condition("topic.field_latin_contents_topics_tid" , $tids , "IN");
+        $results = $query->execute()->fetchCol();
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
+        $filter = true;
+    }
+    if($filter == true && empty($custom_contents)) return ["contents" => array()];
 
-function list_of_latin_contents($type_tid, $categories, $page){
     $query = db_select("node" , "node");
-    $query->join("field_data_field_latin_contents_types" , "contents_types" , "node.nid = contents_types.entity_id");
-    $query->join("field_data_body" , "body" , "node.nid = body.entity_id and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
-    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
     $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
     $query->fields("node" , array("nid" , "title" , "uid" , "created" , "changed"));
-    $query->addField("body" , "body_value" , "body");
     $query->addField("file" , "uri" , "picture");
     $query->condition("node.status" , 1);
     $query->condition("node.type" , "latin_contents");
-    $query->condition("node.language" , "en");
-    $query->condition("contents_types.field_latin_contents_types_tid" , $type_tid);
-
-    if(!empty($categories)){
-        $tids = array_map('intval', explode(',', $categories));
-        $vid = db_select("taxonomy_term_data" , "taxonomy");
-        $vid->join("taxonomy_vocabulary" , "vocab" , "taxonomy.vid = vocab.vid");
-        $vid->fields("vocab", array("vid"));
-        $vid->condition("taxonomy.tid" , $tids , "IN");
-        $category = $vid->execute()->fetch();
-
-        switch ($category->vid){
-            case 29:
-                $query->join("data_field_latin_news_category" , "news" , "node.nid = news.entity_id");
-                $query->condition("news.field_latin_resources_news_tid" , $tids , "IN");
-                break;
-            case 31:
-                $query->join("field_data_field_latin_resources_category" , "resources" , "node.nid = resources.entity_id");
-                $query->condition("resources.field_latin_resources_category_tid" , $tids , "IN");
-                break;
-            case 32:
-                $query->join("field_data_field_latin_casestudies_category" , "casestudies" , "node.nid = casestudies.entity_id");
-                $query->condition("casestudies.field_latin_casestudies_category_tid" , $tids , "IN");
-                break;
-        }
-    }
+    if($filter == true) $query->condition("node.nid" , $custom_contents, "IN");
     $query->orderBy("node.nid" , "DESC");
-    $query->range(30*$page, 30);
+    $count = clone ($query);
+    $query->range($parameter["page"]*30 , 30);
     $contents = $query->execute()->fetchAll();
+    if(empty($contents)) return ["contents" => array()];
 
-    foreach($contents as $key => $value){
-        $contents[$key]->created = format_date($value->created);
-        $contents[$key]->changed = format_date($value->changed);
+    $nids = array();
+    $contents_r = array();
+    foreach ($contents as $content){
+        array_push($nids , $content->nid);
+        $content->types = array();
+        $content->categories = array();
+        $content->topics = array();
 
-        $contents[$key]->picture = image_style_url("300x300", $contents[$key]->picture);
+        $contents_r[$content->nid] = $content;
     }
 
-    return ["contents" => $contents];
+    $query = db_select("field_data_field_latin_contents_types" , "types");
+    $query->fields("types" , array("entity_id"));
+    $query->join("taxonomy_term_data" , "term_data" , "term_data.tid = types.field_latin_contents_types_tid");
+    $query->fields("term_data" , array("tid" , "name"));
+    $query->condition("types.entity_id" , $nids , "IN");
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($contents_r[$result->entity_id]->types , array("tid" => $result->tid , "name" => $result->name));
+
+    $query = db_select("field_data_field_latin_contents_categories" , "categories");
+    $query->fields("categories" , array("entity_id"));
+    $query->join("taxonomy_term_data" , "term_data" , "term_data.tid = categories.field_latin_contents_categories_tid");
+    $query->fields("term_data" , array("tid" , "name"));
+    $query->condition("categories.entity_id" , $nids , "IN");
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($contents_r[$result->entity_id]->categories , array("tid" => $result->tid , "name" => $result->name));
+
+    $query = db_select("field_data_field_latin_contents_topics" , "topics");
+    $query->fields("topics" , array("entity_id"));
+    $query->join("taxonomy_term_data" , "term_data" , "term_data.tid = topics.field_latin_contents_topics_tid");
+    $query->fields("term_data" , array("tid" , "name"));
+    $query->condition("topics.entity_id" , $nids , "IN");
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($contents_r[$result->entity_id]->topics , array("tid" => $result->tid , "name" => $result->name));
+
+    $contents = array_values($contents_r);
+
+    foreach ($contents as $content){
+        $content->created = format_date($content->created, "teaser");
+        $content->changed = format_date($content->changed, "teaser");
+        $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
+    }
+
+    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $parameter["page"]];
+}
+
+function search_content_by_value($value){
+    $query = db_select("node", "node");
+    $query->fields('node', array('nid'));
+    $query->condition('node.title', '%' . $value . '%', 'LIKE');
+    $nid1 = $query->execute()->fetchCol();
+
+    $query = db_select("field_data_body", "body");
+    $query->addField('body', 'entity_id', 'nid');
+    $query->condition('body.body_value', '%' . $value . '%', 'LIKE');
+    $query->condition('body.entity_type' , 'node');
+    $nid2 = $query->execute()->fetchCol();
+
+    $nids = array_merge($nid1, $nid2);
+
+    return $nids;
 }
 
 /*----------------------------------------retrieve----------------------------------------*/
-function latin_contents_resource_retrieve($hash , $nid , $version){
-    if(!(hash_true($hash , "latin_contents"))) return services_error(t('Failed to access'), 10);
+function latin_contents_resource_retrieve($parameter , $nid){
+    $query = db_select("node" , "node");
+    $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.entity_type = 'node' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->leftJoin("field_data_field_link" , "field_link" , "field_link.entity_id = node.nid");
+    $query->leftJoin("field_data_field_eventtime" , "eventtime" , "node.nid = eventtime.entity_id");
+    $query->leftJoin("field_data_field_event_time_and_duration" , "time_and_duration" , "node.nid = time_and_duration.entity_id");
+    $query->leftJoin("field_data_field_event_place" , "event_place" , "node.nid = event_place.entity_id");
+    $query->leftJoin("field_data_field_company" , "company" , "node.nid = company.entity_id");
+    $query->leftJoin("field_data_field_event_registration_link" , "registration_link" , "node.nid = registration_link.entity_id");
+    $query->leftJoin("field_data_field_ifwebinar" , "ifwebinar" , "node.nid = ifwebinar.entity_id");
+    $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
+    $query->fields("node" , array("nid" , "uid" , "title" , "created" , "changed"));
+    $query->fields("body" , array("body_value"));
+    $query->addField("image" , "uri" , "image");
+    $query->addField("field_link" , "field_link_url" , "video_link");
+    $query->addField("eventtime" , "field_eventtime_value" , "event_time");
+    $query->addField("time_and_duration" , "field_event_time_and_duration_value" , "time_and_duration");
+    $query->addField("event_place" , "field_event_place_value" , "event_place");
+    $query->addField("company" , "field_company_value" , "company");
+    $query->addField("registration_link" , "field_event_registration_link_url" , "registration_link");
+    $query->addField("ifwebinar" , "field_ifwebinar_value" , "ifwebinar");
+    $query->addField("808_suggestion" , "field_event_808_suggestion_value" , "808_suggestion");
+    $query->condition("node.nid" , $nid);
+    $query->condition("node.status" , 1);
+    $content = $query->execute()->fetch();
+    if(empty($content)) return services_error("This content is not found!" , 404);
 
-    if(strcmp($version , "pbd_0") == 0){
-        $query = db_select("node" , "node");
-        $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
-        $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
-        $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
-        $query->leftJoin("field_data_field_link" , "field_link" , "field_link.entity_id = node.nid and field_link.entity_type = 'node' and field_link.bundle = 'latin_contents' ");
-        $query->fields("node" , array("nid" , "title" , "created" , "changed"));
-        $query->fields("body" , array("body_value" , "body_summary"));
-        $query->addField("image" , "uri" , "image");
-        $query->addField("field_link" , "field_link_url" , "video_link");
-        $query->condition("node.nid" , $nid);
-        $query->condition("node.status" , 1);
-        $query->condition("node.language" , "en");
-        $query->condition("node.type" , "latin_contents");
-        $content = $query->execute()->fetch();
-
-        if(empty($content)) return services_error("This content is not found!" , 17);
-
-        $query = db_select("field_data_field_latin_content_references" , "ref");
-        $query->addField("ref" , "field_latin_content_references_url" , "references_url");
-        $query->condition("ref.entity_id" , $content->nid);
-        $query->condition("ref.bundle" , "latin_contents");
-        $references = $query->execute()->fetchAll();
-        if(!empty($references)){
-            $content->references =  array();
-            foreach ($references as $ref) array_push($content->references , $ref->references_url);
-        }
-
-        $query = db_select("field_data_field_latin_tags" , "tags");
-        $query->join("taxonomy_term_data" , "taxonomy" , "tags.field_latin_tags_tid = taxonomy.tid");
-        $query->addField("taxonomy" , "name" , "tag");
-        $query->condition("tags.entity_id" , $content->nid);
-        $query->condition("tags.bundle" , "latin_contents");
-        $tags = $query->execute()->fetchAll();
-        if(!empty($tags)){
-            $content->tags =  array();
-            foreach ($tags as $tag) array_push($content->tags , $tag->tag);
-        }
-
-        $query = db_select("taxonomy_index" , "taxonomy_index");
-        $query->join("taxonomy_term_data" , "term_data" , "taxonomy_index.tid = term_data.tid");
-        $query->fields("term_data" , array("tid" , "name"));
-        $query->condition("taxonomy_index.nid" , $content->nid);
-        $category = $query->execute()->fetch();
-        $content->category_tid = $category->tid;
-        $content->category_name = $category->name;
-
-        return ["content" => $content];
+    $content->created = format_date($content->created);
+    $content->changed = format_date($content->changed);
+    if(isset($content->event_time)){
+        $time = explode(" " , $content->event_time);
+        $date = explode("-" , $time[0]);
+        $times = explode(":" , $time[1]);
+        $timestamp = mktime($times[0], $times[1], $times[2], $date[1], $date[2], $date[0]);
+        $content->event_time = date("F j, Y" , $timestamp);
     }
-    return services_error(t('This version is not supported'), 11);
+    $content->references =  array();
+    $content->files =  array();
+    $content->type =  array();
+    $content->category =  array();
+    $content->topic =  array();
+    $content->tags =  array();
+
+    $query = db_select("field_data_field_files" , "field_files");
+    $query->join("file_managed" , "file" , "field_files.field_files_fid = file.fid");
+    $query->addField("file" , "uri" , "file");
+    $query->condition("field_files.entity_id" , $content->nid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($content->files , $result->file);
+
+    $query = db_select("field_data_field_latin_content_references" , "ref");
+    $query->addField("ref" , "field_latin_content_references_url" , "references_url");
+    $query->condition("ref.entity_id" , $content->nid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($content->references , $result->references_url);
+
+    $query = db_select("field_data_field_latin_contents_types" , "types");
+    $query->join("taxonomy_term_data" , "taxonomy" , "types.field_latin_contents_types_tid = taxonomy.tid");
+    $query->fields("taxonomy" , array("tid" , "name"));
+    $query->condition("types.entity_id" , $content->nid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($content->type , array("tid" => $result->tid , "name" => $result->name));
+
+    $query = db_select("field_data_field_latin_contents_categories" , "categories");
+    $query->join("taxonomy_term_data" , "taxonomy" , "categories.field_latin_contents_categories_tid = taxonomy.tid");
+    $query->fields("taxonomy" , array("tid" , "name"));
+    $query->condition("categories.entity_id" , $content->nid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($content->category , array("tid" => $result->tid , "name" => $result->name));
+
+    $query = db_select("field_data_field_latin_contents_topics" , "topics");
+    $query->join("taxonomy_term_data" , "taxonomy" , "topics.field_latin_contents_topics_tid = taxonomy.tid");
+    $query->fields("taxonomy" , array("tid" , "name"));
+    $query->condition("topics.entity_id" , $content->nid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($content->topic , array("tid" => $result->tid , "name" => $result->name));
+
+    $query = db_select("field_data_field_latin_tags" , "tags");
+    $query->join("taxonomy_term_data" , "taxonomy" , "tags.field_latin_tags_tid = taxonomy.tid");
+    $query->fields("taxonomy" , array("tid" , "name"));
+    $query->condition("tags.entity_id" , $content->nid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($content->tags , array("tid" => $result->tid , "name" => $result->name));
+
+    $query = db_select("users" , "user");
+    $query->leftJoin("field_data_field_full_name" , "name" , "user.uid = name.entity_id");
+    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->leftJoin("file_managed" , "file_managed" , "user.picture = file_managed.fid");
+    $query->fields("user" , array("uid"));
+    $query->addField("name" , "field_full_name_value" , "full_name");
+    $query->addField("about_me" , "field_about_me_value" , "about_me");
+    $query->addField("file_managed" , "uri" , "picture");
+    $query->condition("user.uid" , $content->uid);
+    $author = $query->execute()->fetch();
+
+    return ["content" => $content , "author" => $author];
 }
 
 /*-------------------------------------relationships-----------------------------------*/
-function latin_contents_resource_filters($hash  , $type , $version){
-    if(!(hash_true($hash , "latin_contents"))) return services_error(t('Failed to access'), 10);
-    if(strcmp($version , "pbd_0") == 0){
-        switch ($type){
-            case "news":
-                $vid = 29;
-                break;
-            case "resources":
-                $vid = 31;
-                break;
-            case "case_studies":
-                $vid = 32;
-                break;
-            default:
-                return services_error(t('The type is wrong!'), 16);
-        }
-        $query = db_select("taxonomy_term_data" , "taxonomy");
-        $query->fields("taxonomy" , array("tid" , "name"));
-        $query->condition("taxonomy.vid" , $vid);
-        $filters = $query->execute()->fetchAll();
+function latin_contents_resource_filters($parameter  , $type){
+    $type = array();
+    $category = array();
+    $topic = array();
 
-        return ["type" => $type, "filters" => $filters];
+    $query = db_select("taxonomy_term_data" , "term_data");
+    $query->fields("term_data" , array("tid" , "vid" , "name"));
+    $query->condition("term_data.vid" , array(30 , 34 , 35) ,"IN");
+    $results = $query->execute()->fetchAll();
+
+    foreach($results as $result){
+        if($result->vid == 30) array_push($type , array("tid" => $result->tid , "name" => $result->name));
+        if($result->vid == 34) array_push($category , array("tid" => $result->tid , "name" => $result->name));
+        if($result->vid == 35) array_push($topic , array("tid" => $result->tid , "name" => $result->name));
     }
-    return services_error(t('This version is not supported'), 11);
-}
 
-/*-------------------------------------------------------------------------------------*/
-function author_information($uid){
-    $query = db_select("profile" , "profile");
-    $query->leftJoin("field_data_field_full_name" , "name" , "profile.pid = name.entity_id and name.bundle = 'main' and name.entity_type = 'profile2' ");
-    $query->leftJoin("field_data_field_about_me" , "about_me" , "profile.pid = about_me.entity_id and about_me.bundle = 'main' and about_me.entity_type = 'profile2' ");
-    $query->fields("profile" , array("pdi"));
-    $query->addField("name" , "field_full_name_value" , "full_name");
-    $query->addField("about_me" , "field_about_me_value" , "about_me");
-    $query->condition("profile.uid" , $uid , "IN");
+    return array(
+        array("name" => "type", "children" => $type),
+        array("name" => "category", "children" => $category),
+        array("name" => "topic", "children" => $topic)
+    );
 }
+/*-------------------------------------------------------------------------------------*/
