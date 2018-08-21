@@ -89,11 +89,12 @@ function latin_contents_resource_index($parameter){
     $contents = array_values($contents_r);
 
     foreach ($contents as $content){
-        $content->created = format_date($content->created);
-        $content->changed = format_date($content->changed);
+        $content->created = format_date($content->created, "teaser");
+        $content->changed = format_date($content->changed, "teaser");
+        $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
     }
 
-    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField()];
+    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $parameter["page"]];
 }
 
 function search_content_by_value($value){
@@ -141,10 +142,17 @@ function latin_contents_resource_retrieve($parameter , $nid){
     $query->condition("node.nid" , $nid);
     $query->condition("node.status" , 1);
     $content = $query->execute()->fetch();
-    if(empty($content)) return services_error("This content is not found!" , 17);
+    if(empty($content)) return services_error("This content is not found!" , 404);
 
     $content->created = format_date($content->created);
     $content->changed = format_date($content->changed);
+    if(isset($content->event_time)){
+        $time = explode(" " , $content->event_time);
+        $date = explode("-" , $time[0]);
+        $times = explode(":" , $time[1]);
+        $timestamp = mktime($times[0], $times[1], $times[2], $date[1], $date[2], $date[0]);
+        $content->event_time = date("F j, Y" , $timestamp);
+    }
     $content->references =  array();
     $content->files =  array();
     $content->type =  array();
@@ -224,7 +232,10 @@ function latin_contents_resource_filters($parameter  , $type){
         if($result->vid == 35) array_push($topic , array("tid" => $result->tid , "name" => $result->name));
     }
 
-    return ["type" => $type , "category" => $category , "topic" => $topic];
+    return array(
+        array("name" => "type", "children" => $type),
+        array("name" => "category", "children" => $category),
+        array("name" => "topic", "children" => $topic)
+    );
 }
-
 /*-------------------------------------------------------------------------------------*/
