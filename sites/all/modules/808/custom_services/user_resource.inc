@@ -109,8 +109,6 @@ function register($new_user){
 }
 
 function user_resource_exist($data){
-    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
-
     $query = db_select("users", "user");
     $query->fields("user" , array("name" , "mail"));
     if(isset($data["username"]) && strlen($data["username"]) > 0) $query->condition('user.name', $data['username'] , 'LIKE');
@@ -119,6 +117,28 @@ function user_resource_exist($data){
     $result = $query->execute()->fetchObject();
     if(!empty($result)) return true;
     else return false;
+}
+
+function user_resource_subscribe_email($data){
+    $email = $data["email"];
+    $path = "sites/all/modules/808/subscribe_email.json";
+    $string = file_get_contents($path);
+    $data = json_decode($string, true);
+    if($data == '') $data = array();
+    else{
+        if(in_array($email, $data)) return false;
+    }
+    array_push($data, $email);
+    $json = json_encode($data);
+
+    file_put_contents($path, $json);
+
+    $node = node_load(19759);
+    $body = $node->body["und"][0]["value"];
+    $body .= "<div>" . $email . "</div>";
+    $node->body["und"][0]["value"] = $body;
+    node_save($node);
+    return $node;
 }
 
 /*---------------------target action part------------------------------------*/
