@@ -25,7 +25,26 @@ function custom_services_services_resources(){
                         ),
                     )
                 )
-            )
+            ),
+            'actions' => array(
+                'contact_form' => array(
+                    'help' => 'Contact us form page',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'page_resource'),
+                    'callback' => 'page_resource_contact_form',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The data of request.',
+                            'source' => 'data',
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+            ),
         ),
         'user' => array(
             'operations' => array(
@@ -66,7 +85,7 @@ function custom_services_services_resources(){
                         array(
                             'name' => 'data',
                             'type' => 'array',
-                            'description' => 'The hash of url.',
+                            'description' => 'The data of request.',
                             'source' => 'data',
                             'optional' => False,
                         ),
