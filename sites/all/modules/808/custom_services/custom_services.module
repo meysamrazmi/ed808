@@ -470,3 +470,8 @@ function hash_true($hash , $resource){
     if(strcmp($hash, $new_hash) == 0) return true;
     return false;
 }
+function generate_file_address($url){
+    $url = substr($url , 8);
+    $url = "http://api.ed808.com/sites/default/files" . $url;
+    return $url;
+}

@@ -212,6 +212,8 @@ function user_resource_information($parameter , $uid){
     $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
     $query->leftJoin("field_data_field_skills" , "skills" , "user.uid = skills.entity_id");
     $query->leftJoin("field_data_field_mobile" , "mobile" , "user.uid = mobile.entity_id");
+    $query->leftJoin("field_data_field_files" , "field_files" , "user.uid = field_files.entity_id and field_files.entity_type = 'user' ");
+    $query->leftJoin("file_managed" , "cv" , "cv.fid = field_files.field_files_fid");
     $query->fields('user' , array('uid' , 'name' , 'mail' , 'created' , 'login'));
     $query->addField("picture" , "uri" , "picture");
     $query->addField("background_image" , "uri" , "background_image");
@@ -223,6 +225,8 @@ function user_resource_information($parameter , $uid){
     $query->addField("job" , "field_job_value" , "job");
     $query->addField("skills" , "field_skills_value" , "skills");
     $query->addField("mobile" , "field_mobile_value" , "mobile");
+    $query->addField("cv" , "uri" , "cv_url");
+    $query->addField("cv" , "origname" , "cv_name");
     $query->condition('user.uid' , $uid);
     $account = $query->execute()->fetch();
     if(empty($account)) return services_error("User is not exist!" , 404);
@@ -241,6 +245,11 @@ function user_resource_information($parameter , $uid){
     else unset($account->picture);
     if(!empty($account->background_image)) $account->background_image = image_style_url("1360x500_blur", $account->background_image);
     else unset($account->background_image);
+    if(!empty($account->cv_url)) $account->cv_url = generate_file_address($account->cv_url);
+    else {
+        unset($account->cv_url);
+        unset($account->cv_name);
+    }
 
     global $user;
     if($user->uid != $uid){
