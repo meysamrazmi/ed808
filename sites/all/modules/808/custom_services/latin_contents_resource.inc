@@ -1,6 +1,6 @@
 <?php
 
-/*----------------------------------------index----------------------------------------*/
+/*-----------------------------------operations----------------------------------------*/
 function latin_contents_resource_index($parameter){
     $custom_contents = array();
     $filter = false;
@@ -35,7 +35,15 @@ function latin_contents_resource_index($parameter){
         $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
         $filter = true;
     }
-    if($filter == true && empty($custom_contents)) return ["contents" => array()];
+    if(isset($parameter["tag"])){
+        $query = db_select("taxonomy_index" , "taxonomy_index");
+        $query->fields("taxonomy_index" , array("nid"));
+        $query->condition("taxonomy_index.tid" , $parameter["tag"]);
+        $results = $query->execute()->fetchCol();
+        $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
+        $filter = true;
+    }
+    if($filter == true && empty($custom_contents)) return ["contents" => array() , "count" => 0];
 
     $query = db_select("node" , "node");
     $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
@@ -49,7 +57,7 @@ function latin_contents_resource_index($parameter){
     $count = clone ($query);
     $query->range($parameter["page"]*30 , 30);
     $contents = $query->execute()->fetchAll();
-    if(empty($contents)) return ["contents" => array()];
+    if(empty($contents)) return ["contents" => array() , "count" => 0];
 
     $nids = array();
     $contents_r = array();
@@ -109,12 +117,18 @@ function search_content_by_value($value){
     $query->condition('body.entity_type' , 'node');
     $nid2 = $query->execute()->fetchCol();
 
+    $query = db_select("taxonomy_term_data" , "term_data");
+    $query->join("taxonomy_index" , "taxonomy_index" , "taxonomy_index.tid = term_data.tid");
+    $query->fields("taxonomy_index" , array("nid"));
+    $query->condition("term_data.name" , '%' . $value . '%', 'LIKE');
+    $nid3 = $query->execute()->fetchCol();
+
     $nids = array_merge($nid1, $nid2);
+    $nids = array_merge($nids , $nid3);
 
     return $nids;
 }
 
-/*----------------------------------------retrieve----------------------------------------*/
 function latin_contents_resource_retrieve($parameter , $nid){
     $query = db_select("node" , "node");
     $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
@@ -212,6 +226,13 @@ function latin_contents_resource_retrieve($parameter , $nid){
     $query->condition("user.uid" , $content->uid);
     $author = $query->execute()->fetch();
 
+    global $user;
+    $bookmark = db_select("flagging")
+            ->fields("flagging" , array("flagging_id"))
+            ->condition("entity_id" , $nid)->condition("entity_type" , "node")->condition("uid" , $user->uid)
+            ->execute()->fetch();
+    $content->user_bookmark = (!empty($bookmark))? true : false;
+
     return ["content" => $content , "author" => $author];
 }
 
@@ -238,4 +259,3 @@ function latin_contents_resource_filters($parameter  , $type){
         array("name" => "topic", "children" => $topic)
     );
 }
-/*-------------------------------------------------------------------------------------*/
