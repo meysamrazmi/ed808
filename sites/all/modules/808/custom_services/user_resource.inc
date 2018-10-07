@@ -1,4 +1,61 @@
 <?php
+/*---------------------operations part--------------------------------*/
+function user_resource_update_data($data , $uid){
+    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
+
+    global $user;
+    if($user->uid != $uid) return services_error(t('You do not have permission for this action!'), 18);
+
+    return user_update_data($data , $uid);
+}
+function user_update_data($data , $uid){
+    global $user;
+    $account = user_load($uid);
+    if($user->uid != $account->uid) return services_error("You do not have permission for this action" , 18);
+
+    if(isset($data["username"]) && !empty($data["username"])){
+        $query = db_select("users" , "user");
+        $query->fields("user" , array("name"));
+        $query->condition("user.name" , $data["username"]);
+        $result = $query->execute()->fetch();
+        if(empty($result)) $account->name = $data["username"];
+        else return services_error(t("This username is already taken!") , 18);
+    }
+    if(isset($data["email"]) && !empty($data["email"])){
+        $query = db_select("users" , "user");
+        $query->fields("user" , array("mail"));
+        $query->condition("user.mail" , $data["email"]);
+        $result = $query->execute()->fetch();
+        if(empty($result)) $account->mail = $data["email"];
+        else return services_error(t("This Email is already taken!") , 18);
+    }
+    if(isset($data["password"]) && !empty($data["password"])){
+        if(strlen($data["password"]) < 6) return services_error(t("The password should be at least 6 character!") , 16);
+        require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
+        $account->pass = user_hash_password(trim($data['password']));
+    }
+    if(isset($data["picture"]) || (!empty($data["picture"]) && strcmp($data["picture"]["type"] , "image") == 0)){
+        $account->picture = (object)$data["picture"];
+    }
+    if(isset($data["background_image"]) || (!empty($data["background_image"]) && strcmp($data["background_image"]["type"] , "image") == 0)){
+        $account->field_image['und'][0] = $data["background_image"];
+    }
+    if(isset($data["cv"])){
+        $account->field_files['und']['0'] = $data["cv"];
+    }
+    if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
+    if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
+    if(isset($data["education_degree"])) $account->field_education_degree["und"][0]["value"] = $data["education_degree"];
+    if(isset($data["education_field"])) $account->field_education_field["und"][0]["value"] = $data["education_field"];
+    if(isset($data["university"])) $account->field_university["und"][0]["value"] = $data["university"];
+    if(isset($data["job"])) $account->field_job["und"][0]["value"] = $data["job"];
+    if(isset($data["skills"])) $account->field_skills["und"][0]["value"] = $data["skills"];
+    if(isset($data["about"])) $account->field_about_me["und"][0]["value"] = $data["about"];
+
+    user_save($account);
+    return true;
+}
+
 /*---------------------actions part------------------------------------*/
 function user_resource_login($data){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
@@ -45,7 +102,7 @@ function login($username_email, $password){
         if ($user->uid) {
             user_login_finalize();
             $login_data = new stdClass();
-            $login_data->user = $user;
+            $login_data->uid = $user->uid;
             $login_data->sessid = session_id();
             $login_data->session_name = session_name();
             $login_data->token = drupal_get_token('services');
@@ -141,67 +198,8 @@ function user_resource_subscribe_email($data){
     return $node;
 }
 
-/*---------------------target action part------------------------------------*/
-function user_resource_update_data($data , $uid){
-    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
-
-    global $user;
-    if($user->uid != $uid) return services_error(t('You do not have permission for this action!'), 18);
-
-    return user_update_data($data , $uid);
-}
-function user_update_data($data , $uid){
-    global $user;
-    $account = user_load($uid);
-    if($user->uid != $account->uid) return services_error("You do not have permission for this action" , 18);
-
-    if(isset($data["username"]) && !empty($data["username"])){
-        $query = db_select("users" , "user");
-        $query->fields("user" , array("name"));
-        $query->condition("user.name" , $data["username"]);
-        $result = $query->execute()->fetch();
-        if(empty($result)) $account->name = $data["username"];
-        else return services_error(t("This username is already taken!") , 18);
-    }
-    if(isset($data["email"]) && !empty($data["email"])){
-        $query = db_select("users" , "user");
-        $query->fields("user" , array("mail"));
-        $query->condition("user.mail" , $data["email"]);
-        $result = $query->execute()->fetch();
-        if(empty($result)) $account->mail = $data["email"];
-        else return services_error(t("This Email is already taken!") , 18);
-    }
-    if(isset($data["password"]) && !empty($data["password"])){
-        if(strlen($data["password"]) < 6) return services_error(t("The password should be at least 6 character!") , 16);
-        require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
-        $account->pass = user_hash_password(trim($data['password']));
-    }
-    if(isset($data["picture"]) && !empty($data["picture"]) && strcmp($data["picture"]["type"] , "image") == 0){
-        $account->picture = (object)$data["picture"];
-    }
-    if(isset($data["background_image"]) && !empty($data["background_image"]) && strcmp($data["background_image"]["type"] , "image") == 0){
-        $account->field_image['und'][0] = $data["background_image"];
-    }
-    if(isset($data["cv"]) && !empty($data["cv"])){
-        $account->field_files['und']['0'] = $data["cv"];
-    }
-    if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
-    if(isset($data["mobile"]) && strlen($data["mobile"]) > 0) $account->field_mobile["und"][0]["value"] = $data["mobile"];
-    if(isset($data["education_degree"]) && strlen($data["education_degree"]) > 0) $account->field_education_degree["und"][0]["value"] = $data["education_degree"];
-    if(isset($data["education_field"]) && strlen($data["education_field"]) > 0) $account->field_education_field["und"][0]["value"] = $data["education_field"];
-    if(isset($data["university"]) && strlen($data["university"]) > 0) $account->field_university["und"][0]["value"] = $data["university"];
-    if(isset($data["job"]) && strlen($data["job"]) > 0) $account->field_job["und"][0]["value"] = $data["job"];
-    if(isset($data["skills"]) && strlen($data["skills"]) > 0) $account->field_skills["und"][0]["value"] = $data["skills"];
-    if(isset($data["about_me"]) && strlen($data["about_me"]) > 0) $account->field_about_me["und"][0]["value"] = $data["about_me"];
-
-    user_save($account);
-    return true;
-}
-
 /*---------------------relationships part------------------------------*/
 function user_resource_information($parameter , $uid){
-    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "user"))) return services_error(t('Failed to access'), 10);
-
     $query = db_select('users' , 'user');
     $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
     $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' ");
@@ -227,7 +225,7 @@ function user_resource_information($parameter , $uid){
     $query->addField("mobile" , "field_mobile_value" , "mobile");
     $query->condition('user.uid' , $uid);
     $account = $query->execute()->fetch();
-    if(empty($account)) return services_error("User is not exist!" , 16);
+    if(empty($account)) return services_error("User is not exist!" , 404);
     $account->created = format_date($account->created);
     $account->login = format_date($account->login);
 
@@ -254,18 +252,25 @@ function user_resource_information($parameter , $uid){
     return $account;
 }
 function user_resource_nav_bar_info($parameter , $login){
-    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "user"))) return services_error(t('Failed to access'), 10);
-
     global $user;
-    if(!$user->uid > 0) return services_error("User is not logged in!" , 18);
+    if(!$user->uid > 0) return array("uid" => 0);
     $query = db_select("file_managed" , "picture");
     $query->fields("picture" , array("uri"));
     $query->condition("picture.fid" , $user->picture);
     $picture = $query->execute()->fetch();
 
+    $query = db_select("field_data_field_full_name" , "full_name");
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+    $query->condition("full_name.entity_id" , $user->uid)->condition("full_name.entity_type" , "user");
+    $full_name = $query->execute()->fetch();
+
+    module_load_include("inc" , "services" , "resources/user_resource");
+    $token = _user_resource_get_token();
     $result = array();
     $result["uid"] = $user->uid;
     $result["username"] = $user->name;
+    $result["full_name"] = $full_name->full_name;
     if(!empty($picture)) $result["picture"] = image_style_url("200x200", $picture->uri);
+    $result["token"] = $token["token"];
     return $result;
 }
