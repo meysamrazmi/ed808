@@ -21,14 +21,16 @@ function page_resource_index($args){
         $body = db_select("field_data_body" , "body")
                 ->fields("body" , array("body_value"))
                 ->condition("entity_id" , 19768)
-                ->condition("bundle" , "page")
-                ->execute()->fetch()->body_value;
+                ->condition("bundle" , "webform")
+                ->execute()->fetch();
+        if(!$body) $body = null;
+        else $body = $body->body_value;
 
         $query = db_select("field_data_field_image" , "field_image");
         $query->join("file_managed" , "image" , "field_image.field_image_fid = image.fid");
         $query->fields("image" , array("uri"));
         $query->condition("field_image.entity_id" , 19768);
-        $query->condition("field_image.bundle" , "page");
+        $query->condition("field_image.bundle" , "webform");
         $image = $query->execute()->fetch();
 
         $query = db_select("webform_component" , "components");
