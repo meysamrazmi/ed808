@@ -392,6 +392,31 @@ function custom_services_services_resources(){
                 ),
             ),
         ),
+        'post' => array(
+            'operations' => array(
+                'index' => array(),
+                'create' => array(
+                    'help' => 'Create a post',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'post_resource'),
+                    'callback' => 'post_resource_create',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'data of api',
+                            'source' => 'data',
+                            'optional' => False
+                        ),
+                    )
+                ),
+                'update' => array(),
+                'retrieve' => array(),
+                'delete' => array(),
+            ),
+        ),
 
         'latin_news' => array(
             'operations' => array(

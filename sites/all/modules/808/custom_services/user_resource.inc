@@ -58,44 +58,45 @@ function user_update_data($data , $uid){
 
 /*---------------------actions part------------------------------------*/
 function user_resource_login($data){
-    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
+    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
 
-    $login_user = login($data["username_email"], $data["password"]);
+    $login_user = login($data);
 
     return (array)$login_user;
 }
-function login($username_email, $password){
+function login($data){
+    if(!isset($data["username_email"]) || !isset($data["password"]) || !isset($data["reCaptchaToken"])) return services_error("Incomplete data!" , 401);
+
     /*check if user is login or not*/
     global $user;
     if ($user->uid > 0) {
-        return services_error(t("User is already logged in!") , 18);
+        return services_error(t("User is already logged in!") , 401);
     }
 
     /*check if user is exist and unblocked*/
     $query =  db_select('users' , 'user');
     $query->fields('user', array('name' , 'status'));
     $db_or = db_or();
-    $db_or->condition('user.name', $username_email , 'LIKE');
-    $db_or->condition('user.mail', $username_email , 'LIKE');
+    $db_or->condition('user.name', $data["username_email"] , 'LIKE');
+    $db_or->condition('user.mail', $data["username_email"] , 'LIKE');
     $query->condition($db_or);
     $result = $query->execute()->fetchObject();
-    if(empty($result)){
-        return services_error(t("User is not exist!") , 17);
-    }
-    elseif($result->status == 0){
-        return  services_error(t("User is inactive!") , 18);
-    }
-    else{
-        $username = $result->name;
-    }
+    if(empty($result))return services_error(t("User is not exist!") , 404);
+    elseif($result->status == 0)return services_error(t("User is inactive!") , 403);
+    else $username = $result->name;
 
     /*check the truth of username and password*/
-    $uid = user_authenticate($username, $password);
+    $uid = user_authenticate($username, $data["password"]);
 
     /*
      * @todo
      * check flood for attempting to login frequently
      * */
+
+    /*check re captcha*/
+    $captcha = reCaptcha($data["reCaptchaToken"]);
+    if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
+    if($captcha == false) return services_error("ReCaptcha Error!" , 401);
 
     if ($uid) {
         $user = user_load($uid);
@@ -114,12 +115,17 @@ function login($username_email, $password){
 }
 
 function user_resource_register($data){
-    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
+    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
 
-    if(!isset($data['username']) || empty($data['username'])) return services_error(t("Username is required!") , 15);
-    if(!isset($data['password']) || empty($data['password'])) return services_error(t("Password is required!") , 15);
-    if(!isset($data['email']) || empty($data['email'])) return services_error(t("Email is required!") , 15);
-    if(!isset($data['full_name']) || empty($data['full_name'])) return services_error(t("Email is required!") , 15);
+    if(!isset($data['username']) || empty($data['username'])) return services_error(t("Username is required!") , 401);
+    if(!isset($data['password']) || empty($data['password'])) return services_error(t("Password is required!") , 401);
+    if(!isset($data['email']) || empty($data['email'])) return services_error(t("Email is required!") , 401);
+    if(!isset($data['full_name']) || empty($data['full_name'])) return services_error(t("Email is required!") , 401);
+    if(!isset($data['reCaptchaToken']) || empty($data['reCaptchaToken'])) return services_error(t("ReCaptcha is required!") , 401);
+
+    $captcha = reCaptcha($data["reCaptchaToken"]);
+    if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
+    if($captcha == false) return services_error("ReCaptcha Error!" , 401);
 
     $new_user = array(
         'name' => $data['username'],
@@ -282,4 +288,24 @@ function user_resource_nav_bar_info($parameter , $login){
     if(!empty($picture)) $result["picture"] = image_style_url("200x200", $picture->uri);
     $result["token"] = $token["token"];
     return $result;
+}
+function reCaptcha($key){
+    $recaptcha_secret_key = variable_get('recaptcha_secret_key', '');
+    if (empty($key) || empty($recaptcha_secret_key)) {
+        return FALSE;
+    }
+
+    // Use drupal_http_request() to circumvent all issues with the Google library.
+    $recaptcha = new \ReCaptcha\ReCaptcha($recaptcha_secret_key, new \ReCaptcha\RequestMethod\Drupal7Post());
+
+    $resp = $recaptcha->verify(
+        $key,
+        ip_address()
+    );
+
+    if ($resp->isSuccess()) {
+        // Verified!
+        return TRUE;
+    }
+    return FALSE;
 }

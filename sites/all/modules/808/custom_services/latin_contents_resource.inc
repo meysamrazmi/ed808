@@ -142,6 +142,7 @@ function latin_contents_resource_retrieve($parameter , $nid){
     $query->leftJoin("field_data_field_event_registration_link" , "registration_link" , "node.nid = registration_link.entity_id");
     $query->leftJoin("field_data_field_ifwebinar" , "ifwebinar" , "node.nid = ifwebinar.entity_id");
     $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
+    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.bundle = 'latin_contents' ");
     $query->fields("node" , array("nid" , "uid" , "title" , "created" , "changed"));
     $query->fields("body" , array("body_value"));
     $query->addField("image" , "uri" , "image");
@@ -153,6 +154,7 @@ function latin_contents_resource_retrieve($parameter , $nid){
     $query->addField("registration_link" , "field_event_registration_link_url" , "registration_link");
     $query->addField("ifwebinar" , "field_ifwebinar_value" , "ifwebinar");
     $query->addField("808_suggestion" , "field_event_808_suggestion_value" , "808_suggestion");
+    $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
     $query->condition("node.nid" , $nid);
     $query->condition("node.status" , 1);
     $content = $query->execute()->fetch();
