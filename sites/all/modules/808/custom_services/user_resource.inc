@@ -2,13 +2,6 @@
 /*---------------------operations part--------------------------------*/
 function user_resource_update_data($data , $uid){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
-
-    global $user;
-    if($user->uid != $uid) return services_error(t('You do not have permission for this action!'), 18);
-
-    return user_update_data($data , $uid);
-}
-function user_update_data($data , $uid){
     global $user;
     $account = user_load($uid);
     if($user->uid != $account->uid) return services_error("You do not have permission for this action" , 18);
@@ -53,9 +46,8 @@ function user_update_data($data , $uid){
     if(isset($data["about"])) $account->field_about_me["und"][0]["value"] = $data["about"];
 
     user_save($account);
-    return true;
+    return user_resource_information(array() , $account->uid);
 }
-
 /*---------------------actions part------------------------------------*/
 function user_resource_login($data){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
@@ -231,7 +223,7 @@ function user_resource_information($parameter , $uid){
     $query->addField("job" , "field_job_value" , "job");
     $query->addField("skills" , "field_skills_value" , "skills");
     $query->addField("mobile" , "field_mobile_value" , "mobile");
-    $query->addField("cv" , "uri" , "cv_url");
+    $query->addField("cv" , "uri" , "cv");
     $query->addField("cv" , "origname" , "cv_name");
     $query->condition('user.uid' , $uid);
     $account = $query->execute()->fetch();

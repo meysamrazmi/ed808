@@ -538,18 +538,5 @@ function discount_configuration_form_submit($from, &$form_state){
 
 function developer()
 {
-	
-	$query = db_select("node" , "n");
-	$query->fields("n" , array("nid"));
-	$nids = $query->execute()->fetchCol();
-	
-	foreach($nids as $id){
-		$node = node_load($id);
-		node_save($node);
-	}
-	
-	adump("OK");
-	
     die();
-
 }

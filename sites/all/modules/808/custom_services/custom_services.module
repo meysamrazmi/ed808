@@ -489,7 +489,6 @@ function upload_file($parameter) {
     }
     return $files;
 }
-
 function hash_true($hash , $resource){
     $new_hash = hash_hmac("sha256" , $resource , "@Civil808Android@Saze808@" , false);
     if(strcmp($hash, $new_hash) == 0) return true;
