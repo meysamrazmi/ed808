@@ -196,12 +196,12 @@ function custom_services_services_resources(){
                 ),
             ),
         ),
-        'latin_contents' => array(
+        'contents' => array(
             'operations' => array(
                 'index' => array(
                     'help' => 'return all contents',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'latin_contents_resource_index',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_index',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
@@ -218,12 +218,19 @@ function custom_services_services_resources(){
                 ),
                 'retrieve' => array(
                     'help' => 'return a contents',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'latin_contents_resource_retrieve',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_retrieve',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
+                        array(
+                            'name' => 'nid',
+                            'type' => 'int',
+                            'description' => 'Nid of content',
+                            'source' => array('path' => 0),
+                            'optional' => FALSE,
+                        ),
                         array(
                             'name' => 'parameter',
                             'type' => 'array',
@@ -232,21 +239,14 @@ function custom_services_services_resources(){
                             'optional' => True,
                             'default' => array()
                         ),
-                        array(
-                            'name' => 'nid',
-                            'type' => 'int',
-                            'description' => 'Nid of content',
-                            'source' => array('path' => 0),
-                            'optional' => FALSE,
-                        ),
                     ),
                 ),
             ),
             'relationships' => array(
                 'filters' => array(
                     'help' => 'return filters of a content type',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_contents_resource'),
-                    'callback' => 'latin_contents_resource_filters',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_filters',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
@@ -269,22 +269,77 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'event' => array(
+                    'help' => 'Return new event list',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'content_resource_event_list',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of api',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'url',
+                            'type' => 'string',
+                            'description' => 'Just use for url address.',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                            'default' => "list"
+                        ),
+                    )
+                ),
+                'comments' => array(
+                    'help' => 'Return comments',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'content_resource_comments',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of api',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'nid',
+                            'type' => 'int',
+                            'description' => 'nid for list of comments',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                        ),
+                    )
+                ),
             ),
         ),
         'tag' => array(
             'operations' => array(
                 'index' => array(),
-                'retrieve' => array(),
-            ),
-            'relationships' => array(
-                'contents' => array(
-                    'help' => 'return all contents of a tag',
+                'retrieve' => array(
+                    'help' => 'return a tag information',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'tag_resource'),
-                    'callback' => 'tag_resource_contents',
+                    'callback' => 'tag_resource_retrieve',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
+                        array(
+                            'name' => 'tid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'The tid of the tag',
+                        ),
                         array(
                             'name' => 'parameter',
                             'type' => 'array',
@@ -293,13 +348,75 @@ function custom_services_services_resources(){
                             'optional' => True,
                             'default' => array()
                         ),
+                    ),
+                ),
+            ),
+        ),
+        'comments' => array(
+            'operations' => array(
+                'create' => array(
+                    'help' => 'create a comment',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'comment_resource'),
+                    'callback' => 'comment_resource_create',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
                         array(
-                            'name' => 'tid',
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The data for create',
+                            'source' => 'data',
+                            'optional' => FALSE,
+                        )
+                    ),
+                ),
+                'update' => array(
+                    'help' => 'update a comment',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'comment_resource'),
+                    'callback' => 'comment_resource_update',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'cid',
                             'optional' => FALSE,
                             'source' => array('path' => 0),
                             'type' => 'int',
-                            'description' => 'The tid of the tag',
+                            'description' => 'The cid of the comment to for edit',
                         ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The data for update',
+                            'source' => 'data',
+                            'optional' => FALSE,
+                        )
+                    ),
+                ),
+                'delete' => array(
+                    'help' => t('Delete a comment'),
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'comment_resource'),
+                    'callback' => 'comment_resource_delete',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'cid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'The cid of the comment to delete',
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The data for delete',
+                            'source' => 'data',
+                            'optional' => FALSE,
+                        )
                     ),
                 ),
             ),
@@ -345,53 +462,6 @@ function custom_services_services_resources(){
                 ),
             ),
         ),
-        'event' => array(
-            'operations' => array(
-                'index' => array(
-                    'help' => 'Return event list',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'event_resource'),
-                    'callback' => 'event_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'parameter',
-                            'type' => 'array',
-                            'description' => 'parameter of api',
-                            'source' => array('param' => 'parameter'),
-                            'optional' => True,
-                            'default' => array()
-                        ),
-                    )
-                ),
-                'retrieve' => array(
-                    'help' => 'Return a event data',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'event_resource'),
-                    'callback' => 'event_resource_retrieve',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'nid',
-                            'type' => 'int',
-                            'description' => 'parameter of api',
-                            'source' => array('path' => 0),
-                            'optional' => False,
-                        ),
-                        array(
-                            'name' => 'parameter',
-                            'type' => 'array',
-                            'description' => 'parameter of api',
-                            'source' => array('param' => 'parameter'),
-                            'optional' => True,
-                            'default' => array()
-                        ),
-                    )
-                ),
-            ),
-        ),
         'post' => array(
             'operations' => array(
                 'index' => array(),
@@ -415,36 +485,6 @@ function custom_services_services_resources(){
                 'update' => array(),
                 'retrieve' => array(),
                 'delete' => array(),
-            ),
-        ),
-
-        'latin_news' => array(
-            'operations' => array(
-                'index' => array(
-                    'help' => 'return all latin news',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_news_resource'),
-                    'callback' => 'latin_news_resource_index',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                ),
-                'retrieve' => array(
-                    'help' => 'retrieve a latin news',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'latin_news_resource'),
-                    'callback' => 'latin_news_resource_retrieve',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'nid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The nid of the news to retrieve',
-                        ),
-                    ),
-                ),
             ),
         ),
 	);

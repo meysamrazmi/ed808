@@ -15,7 +15,7 @@ function page_resource_index($args){
         $query->condition("field_image.bundle" , "page");
         $image = $query->execute()->fetch();
 
-        return ["body" => $body , "image" => $image->uri];
+        return ["body" => $body , "image" => generate_file_address($image->uri)];
     }
     if(strcmp($args , "contact_us") == 0){
         $body = db_select("field_data_body" , "body")
@@ -39,7 +39,7 @@ function page_resource_index($args){
         $contact_fields = $query->execute()->fetchCol();
 
 
-        return ["body" => $body , "image" => $image->uri , "contact_form" => $contact_fields];
+        return ["body" => $body , "image" => generate_file_address($image->uri) , "contact_form" => $contact_fields];
     }
     return $args;
 }
