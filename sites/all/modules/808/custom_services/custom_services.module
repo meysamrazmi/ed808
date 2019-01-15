@@ -48,6 +48,31 @@ function custom_services_services_resources(){
         ),
         'user' => array(
             'operations' => array(
+                'retrieve' => array(
+                    'help' => 'Return user`s data',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_retrieve',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'The uid of the user',
+                        ),
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                    ),
+                ),
                 'update' => array(
                     'help' => 'Update a user',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
@@ -144,31 +169,6 @@ function custom_services_services_resources(){
                 ),
             ),
             'relationships' => array(
-                'information' => array(
-                    'help' => 'Return user`s data',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_resource_information',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'parameter',
-                            'type' => 'array',
-                            'description' => 'Parameters of request.',
-                            'source' => array('param' => 'parameter'),
-                            'optional' => True,
-                            'default' => array()
-                        ),
-                        array(
-                            'name' => 'uid',
-                            'optional' => FALSE,
-                            'source' => array('path' => 0),
-                            'type' => 'int',
-                            'description' => 'The uid of the user',
-                        ),
-                    ),
-                ),
                 'nav_bar_info' => array(
                     'help' => 'Return user`s data for nav bar',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),

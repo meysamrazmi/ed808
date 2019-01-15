@@ -1,5 +1,66 @@
 <?php
 /*---------------------operations part--------------------------------*/
+function user_resource_retrieve($uid , $parameter){
+    $query = db_select('users' , 'user');
+    $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
+    $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' ");
+    $query->leftJoin("file_managed" , "background_image" , "background_image.fid = field_image.field_image_fid");
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id");
+    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->leftJoin("field_data_field_university" , "university" , "user.uid = university.entity_id");
+    $query->leftJoin("field_data_field_education_field" , "education_field" , "user.uid = education_field.entity_id");
+    $query->leftJoin("field_data_field_education_degree" , "education_degree" , "user.uid = education_degree.entity_id");
+    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
+    $query->leftJoin("field_data_field_skills" , "skills" , "user.uid = skills.entity_id");
+    $query->leftJoin("field_data_field_mobile" , "mobile" , "user.uid = mobile.entity_id");
+    $query->leftJoin("field_data_field_files" , "field_files" , "user.uid = field_files.entity_id and field_files.entity_type = 'user' ");
+    $query->leftJoin("file_managed" , "cv" , "cv.fid = field_files.field_files_fid");
+    $query->fields('user' , array('uid' , 'name' , 'mail' , 'created' , 'login'));
+    $query->addField("picture" , "uri" , "picture");
+    $query->addField("background_image" , "uri" , "background_image");
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+    $query->addField("about_me" , "field_about_me_value" , "about");
+    $query->addField("university" , "field_university_value" , "university");
+    $query->addField("education_field" , "field_education_field_value" , "education_field");
+    $query->addField("education_degree" , "field_education_degree_value" , "education_degree");
+    $query->addField("job" , "field_job_value" , "job");
+    $query->addField("skills" , "field_skills_value" , "skills");
+    $query->addField("mobile" , "field_mobile_value" , "mobile");
+    $query->addField("cv" , "uri" , "cv");
+    $query->addField("cv" , "origname" , "cv_name");
+    $query->condition('user.uid' , $uid);
+    $account = $query->execute()->fetch();
+    if(empty($account)) return services_error("User is not exist!" , 404);
+    $account->created = format_date($account->created);
+    $account->login = format_date($account->login);
+
+    $account->roles = array();
+    $query = db_select('users_roles' , 'user_role');
+    $query->join('role' , 'role' , 'user_role.rid = role.rid');
+    $query->fields('role', array('rid' , 'name'));
+    $query->condition('user_role.uid' , $uid);
+    $results = $query->execute()->fetchAll();
+    foreach ($results as $result) array_push($account->roles , array("rid" => $result->rid , "name" => $result->name));
+
+    if(!empty($account->picture)) $account->picture =  image_style_url("200x200", $account->picture);
+    else unset($account->picture);
+    if(!empty($account->background_image)) $account->background_image = image_style_url("1360x500_blur", $account->background_image);
+    else unset($account->background_image);
+    if(!empty($account->cv_url)) $account->cv_url = generate_file_address($account->cv_url);
+    else {
+        unset($account->cv_url);
+        unset($account->cv_name);
+    }
+
+    global $user;
+    if($user->uid != $uid){
+        unset($account->mail);
+        unset($account->mobile);
+        unset($account->login);
+    }
+
+    return $account;
+}
 function user_resource_update_data($data , $uid){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
     global $user;
@@ -197,67 +258,6 @@ function user_resource_subscribe_email($data){
 }
 
 /*---------------------relationships part------------------------------*/
-function user_resource_information($parameter , $uid){
-    $query = db_select('users' , 'user');
-    $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
-    $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' ");
-    $query->leftJoin("file_managed" , "background_image" , "background_image.fid = field_image.field_image_fid");
-    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id");
-    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
-    $query->leftJoin("field_data_field_university" , "university" , "user.uid = university.entity_id");
-    $query->leftJoin("field_data_field_education_field" , "education_field" , "user.uid = education_field.entity_id");
-    $query->leftJoin("field_data_field_education_degree" , "education_degree" , "user.uid = education_degree.entity_id");
-    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
-    $query->leftJoin("field_data_field_skills" , "skills" , "user.uid = skills.entity_id");
-    $query->leftJoin("field_data_field_mobile" , "mobile" , "user.uid = mobile.entity_id");
-    $query->leftJoin("field_data_field_files" , "field_files" , "user.uid = field_files.entity_id and field_files.entity_type = 'user' ");
-    $query->leftJoin("file_managed" , "cv" , "cv.fid = field_files.field_files_fid");
-    $query->fields('user' , array('uid' , 'name' , 'mail' , 'created' , 'login'));
-    $query->addField("picture" , "uri" , "picture");
-    $query->addField("background_image" , "uri" , "background_image");
-    $query->addField("full_name" , "field_full_name_value" , "full_name");
-    $query->addField("about_me" , "field_about_me_value" , "about");
-    $query->addField("university" , "field_university_value" , "university");
-    $query->addField("education_field" , "field_education_field_value" , "education_field");
-    $query->addField("education_degree" , "field_education_degree_value" , "education_degree");
-    $query->addField("job" , "field_job_value" , "job");
-    $query->addField("skills" , "field_skills_value" , "skills");
-    $query->addField("mobile" , "field_mobile_value" , "mobile");
-    $query->addField("cv" , "uri" , "cv");
-    $query->addField("cv" , "origname" , "cv_name");
-    $query->condition('user.uid' , $uid);
-    $account = $query->execute()->fetch();
-    if(empty($account)) return services_error("User is not exist!" , 404);
-    $account->created = format_date($account->created);
-    $account->login = format_date($account->login);
-
-    $account->roles = array();
-    $query = db_select('users_roles' , 'user_role');
-    $query->join('role' , 'role' , 'user_role.rid = role.rid');
-    $query->fields('role', array('rid' , 'name'));
-    $query->condition('user_role.uid' , $uid);
-    $results = $query->execute()->fetchAll();
-    foreach ($results as $result) array_push($account->roles , array("rid" => $result->rid , "name" => $result->name));
-
-    if(!empty($account->picture)) $account->picture =  image_style_url("200x200", $account->picture);
-    else unset($account->picture);
-    if(!empty($account->background_image)) $account->background_image = image_style_url("1360x500_blur", $account->background_image);
-    else unset($account->background_image);
-    if(!empty($account->cv_url)) $account->cv_url = generate_file_address($account->cv_url);
-    else {
-        unset($account->cv_url);
-        unset($account->cv_name);
-    }
-
-    global $user;
-    if($user->uid != $uid){
-        unset($account->mail);
-        unset($account->mobile);
-        unset($account->login);
-    }
-
-    return $account;
-}
 function user_resource_nav_bar_info($parameter , $login){
     global $user;
     if(!$user->uid > 0) return array("uid" => 0);

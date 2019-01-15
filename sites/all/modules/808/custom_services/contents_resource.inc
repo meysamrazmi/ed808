@@ -319,8 +319,16 @@ function content_resource_comments($parameter , $nid){
 
     $subquery = db_select("comment" , "comment");
     $subquery->join($query , "parent" , "parent.cid = comment.pid");
+    $subquery->join("field_data_comment_body" , "body" , "body.entity_id = comment.cid");
+    $subquery->join("users" , "user" , "user.uid = comment.uid");
+    $subquery->leftJoin("field_data_field_full_name" , "full_name" , "full_name.entity_id = user.uid and full_name.entity_type = 'user' ");
+    $subquery->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
     $subquery->fields("comment" , array("cid" , "pid" , "uid" , "created" , "changed"));
-    $subquery->fields("parent" , array("body" , "author_username" , "author_name" , "author_pic"));
+    $subquery->addField("body" , "comment_body_value" , "body");
+    $subquery->addField("user" , "name" , "author_username");
+    $subquery->addField("full_name" , "field_full_name_value" , "author_name");
+    $subquery->addField("user_pic" , "uri" , "author_pic");
+    $subquery->orderBy("comment.cid" , "ASC");
 
 
     $comments = $query->execute()->fetchAll();
@@ -329,11 +337,18 @@ function content_resource_comments($parameter , $nid){
     $associate_comments = array();
     foreach ($comments as $comment){
         $comment->replies = array();
+        $comment->created = format_date($comment->created);
+        $comment->changed = format_date($comment->changed);
+        if(!empty($comment->author_pic)) $comment->author_pic = image_style_url("200x200", $comment->author_pic);
         $associate_comments[$comment->cid] = $comment;
     }
     foreach ($children as $child){
-        if(isset($associate_comments[$child->pid]))
-            array_push($associate_comments[$child->pid]->replies , $child);
+        if(isset($associate_comments[$child->pid])) {
+            $child->created = format_date($child->created);
+            $child->changed = format_date($child->changed);
+            if(!empty($child->author_pic)) $child->author_pic = image_style_url("200x200", $child->author_pic);
+            array_push($associate_comments[$child->pid]->replies, $child);
+        }
     }
     $comments = array_values($associate_comments);
 
