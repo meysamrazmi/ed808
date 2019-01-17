@@ -320,6 +320,31 @@ function custom_services_services_resources(){
                         ),
                     )
                 ),
+                'relative' => array(
+                    'help' => 'Return relative nodes',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'content_resource_relatives',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of api',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'nid',
+                            'type' => 'int',
+                            'description' => 'nid for list of comments',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                        ),
+                    )
+                ),
             ),
         ),
         'tag' => array(

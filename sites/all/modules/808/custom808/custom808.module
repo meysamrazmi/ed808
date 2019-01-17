@@ -5,6 +5,14 @@
  */
 function custom808_menu(){
     $items = array();
+    $items['admin/developer'] = array(
+        'title' => t('developer page'),
+        'description' => t('developer page'),
+        'page callback' => 'developer',
+        'access arguments' => array('administer modules'),
+        'type' => MENU_CALLBACK,
+        'file' => 'custom808.inc',
+    );
 
     $items['admin/structure/services/apiversion'] = array(
         'title' => t('api versions list'),

@@ -354,4 +354,122 @@ function content_resource_comments($parameter , $nid){
 
     return $comments;
 }
+function content_resource_relatives($parameter , $nid){
+    /*get the most relative 20 nids for $nid for each $parameter['page']*/
+    $relatives_priority =  fetch_content_relatives($nid , $parameter["page"]);
+
+    /*get the nids*/
+    $nids = array_keys($relatives_priority);
+
+    /*fetch the data*/
+    $query = db_select("node" , "node");
+    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
+    $query->fields("node" , array("nid" , "title" , "uid" , "created" , "changed"));
+    $query->addField("file" , "uri" , "picture");
+    $query->condition("node.nid" , $nids , "IN");
+    $query->orderBy("node.nid" , "DESC");
+    $relatives = $query->execute()->fetchAll();
+
+    /*
+     * this part is for sort the result base on priority
+     * and change the picture address and the time format
+     */
+    $sorted = array();
+    foreach ($relatives as $relative){
+        $relative->created = format_date($relative->created, "teaser");
+        $relative->changed = format_date($relative->changed, "teaser");
+        $relative->picture = (!empty($relative->picture)) ? image_style_url("300x200" , $relative->picture) : "";
+        $sorted[$relative->nid] = $relative;
+    }
+    foreach($relatives_priority as $key => $value){
+        $relatives_priority[$key] = $sorted[$key];
+    }
+    $relatives = array_values($relatives_priority);
+
+    return $relatives;
+}
+/**
+ * find the most relative nodes for the $node_id based on the priority
+ * node_topics has 4, node_categories has 3, node_tag has 2, node_types has 1
+ * if the relatives did not find before it is computed and save in database
+ * if there is record in database and is inserted befor 7 days ago it is updated again
+ * else the result fetch form database and split 20 rows based on $page and return the relative nids
+ */
+function fetch_content_relatives($node_id , $page = 0){
+
+    /*fetch the $node_id in db*/
+    $relatives = db_select("relative_contents" , "relative")->fields("relative" , array())
+            ->condition("entity_id" , $node_id)->condition("entity_type" , "node")->execute()->fetch();
+
+    /*find the timestamp for 7 days before*/
+    $time = strtotime('-7 day' , REQUEST_TIME);
+
+    /*if there is no record or old record update compute again else fetch data from db*/
+    if(empty($relatives) || $relatives->date < $time){
+        $priority = array();
+
+        /*check relatives on topics with priority 4*/
+        $query = db_select("field_data_field_latin_contents_topics" , "node_topics");
+        $query->join("field_data_field_latin_contents_topics" , "relative_topics" , "relative_topics.field_latin_contents_topics_tid = node_topics.field_latin_contents_topics_tid and relative_topics.entity_type = 'node' and relative_topics.bundle = 'latin_contents' ");
+        $query->join("node" , "node" , "node.nid = relative_topics.entity_id and node.status = '1' ");
+        $query->fields("node" , array("nid"));
+        $query->condition("node_topics.entity_id" , $node_id);
+        $query->condition("relative_topics.entity_id" , $node_id , "<>");
+        $nodes = $query->execute()->fetchCol();
+        foreach($nodes as $nid) $priority[$nid] = 4;
+
+        /*check relatives on categories with priority 3*/
+        $query = db_select("field_data_field_latin_contents_categories" , "node_categories");
+        $query->join("field_data_field_latin_contents_categories" , "relative_categories" , "relative_categories.field_latin_contents_categories_tid = node_categories.field_latin_contents_categories_tid and relative_categories.entity_type = 'node' and relative_categories.bundle = 'latin_contents' ");
+        $query->join("node" , "node" , "node.nid = relative_categories.entity_id and node.status = '1' ");
+        $query->fields("node" , array("nid"));
+        $query->condition("node_categories.entity_id" , $node_id);
+        $query->condition("relative_categories.entity_id" , $node_id , "<>");
+        $nodes = $query->execute()->fetchCol();
+        foreach($nodes as $nid) if(isset($priority[$nid])) $priority[$nid] += 3; else $priority[$nid] = 3;
+
+        /*check relatives on categories with tags 2*/
+        $query = db_select("field_data_field_latin_tags" , "node_tag");
+        $query->join("field_data_field_latin_tags" , "relative_tag" , "node_tag.field_latin_tags_tid = relative_tag.field_latin_tags_tid and relative_tag.entity_type = 'node' and relative_tag.bundle = 'latin_contents' ");
+        $query->join("node" , "node" , "node.nid = relative_tag.entity_id and node.status = '1' ");
+        $query->fields("node" , array("nid"));
+        $query->condition("node_tag.entity_id" , $node_id);
+        $query->condition("relative_tag.entity_id" , $node_id , "<>");
+        $nodes = $query->execute()->fetchCol();
+        foreach($nodes as $nid) if(isset($priority[$nid])) $priority[$nid] += 2; else $priority[$nid] = 2;
+
+        /*check relatives on types with tags 1*/
+        $query = db_select("field_data_field_latin_contents_types" , "node_types");
+        $query->join("field_data_field_latin_contents_types" , "relative_types" , "relative_types.field_latin_contents_types_tid = node_types.field_latin_contents_types_tid and relative_types.entity_type = 'node' and relative_types.bundle = 'latin_contents' ");
+        $query->join("node" , "node" , "node.nid = relative_types.entity_id and node.status = '1' ");
+        $query->fields("node" , array("nid"));
+        $query->condition("node_types.entity_id" , $node_id);
+        $query->condition("relative_types.entity_id" , $node_id , "<>");
+        $nodes = $query->execute()->fetchCol();
+        foreach($nodes as $nid) if(isset($priority[$nid])) $priority[$nid] += 1; else $priority[$nid] = 1;
+
+        arsort($priority);
+
+        $nids = $priority;
+        $result = serialize($priority);
+
+        db_merge("relative_contents")->key(array(
+            "entity_id" => $node_id,
+            "entity_type" => "node",
+            "bundle" => "latin_contents"
+        ))->fields(array(
+            "contents_id" => $result,
+            "date" => REQUEST_TIME
+        ))->execute();
+    }
+    else{
+        $nids = unserialize($relatives->contents_id);
+    }
+
+    $page = (int)$page*20;
+    $nids = array_slice($nids , $page , 20 , true);
+
+    return $nids;
+}
 /*-------------------------------------------------------------------------------------*/

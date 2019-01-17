@@ -146,6 +146,55 @@ function custom_services_update_7104() {
     db_add_field('api_code_version', 'method', $newCol);
 }
 
+/**
+ * Create new database table {relative_contents}.
+ */
+function custom_services_update_7105(){
+    $schema['relative_contents'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => 'Primary Key - id',
+            ),
+            'entity_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+                'size' => 'small',
+                'description' => 'The if of entity',
+            ),
+            'entity_type' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The entity type',
+            ),
+            'bundle' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The bundle',
+            ),
+            'contents_id' => array(
+                'type' => 'text',
+                'size' => 'big',
+                'not null' => TRUE,
+                'description' => 'The contents that are relative in serialize type',
+            ),
+            'date' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when an action has been happened.',
+            ),
+        ),
+
+        'primary key' => array('id'),
+    );
+    db_create_table('relative_contents', $schema['relative_contents']);
+}
+
 /*
  * Implementation of hook_install()
 */
