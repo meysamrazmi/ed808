@@ -356,7 +356,7 @@ function content_resource_comments($parameter , $nid){
 }
 function content_resource_relatives($parameter , $nid){
     /*get the most relative 20 nids for $nid for each $parameter['page']*/
-    $relatives_priority =  fetch_content_relatives($nid , $parameter["page"]);
+    $relatives_priority =  fetch_content_relatives($nid);
 
     /*get the nids*/
     $nids = array_keys($relatives_priority);
@@ -396,7 +396,7 @@ function content_resource_relatives($parameter , $nid){
  * if there is record in database and is inserted befor 7 days ago it is updated again
  * else the result fetch form database and split 20 rows based on $page and return the relative nids
  */
-function fetch_content_relatives($node_id , $page = 0){
+function fetch_content_relatives($node_id){
 
     /*fetch the $node_id in db*/
     $relatives = db_select("relative_contents" , "relative")->fields("relative" , array())
@@ -451,6 +451,41 @@ function fetch_content_relatives($node_id , $page = 0){
 
         arsort($priority);
 
+        $n = 3;
+        /* choosing random n-randoms nids from top priority
+         * in $last array categorize the nids based on the priority
+         * the nids that have same priority are put in the same array
+         */
+        $max = 10;
+        $last = array();
+        $count = 0;
+        foreach ($priority as $key=>$value){
+            if($value == $max){
+                $last[$max][$key] = $value;
+                $count++;
+            }
+            elseif($count < 3){
+                $max = $value;
+                $last[$max][$key] = $value;
+                $count++;
+            }
+        }
+        /* in this part we check if the high priority size less than n
+         * all the array will push
+         * else we choose the random nids based on our capacity
+         * */
+        $priority = array();
+        foreach ($last as $key=>$value){
+            $capacity = 3 - count($priority);
+            if(($capacity - count($last[$key])) >= 0){
+                foreach ($value as $k=>$v) $priority[$k] = $v;
+            }
+            elseif($capacity > 0){
+                $random_keys = array_rand($value,$capacity);
+                foreach ($random_keys as $k) $priority[$k] = $value[$k];
+            }
+        }
+
         $nids = $priority;
         $result = serialize($priority);
 
@@ -466,9 +501,6 @@ function fetch_content_relatives($node_id , $page = 0){
     else{
         $nids = unserialize($relatives->contents_id);
     }
-
-    $page = (int)$page*20;
-    $nids = array_slice($nids , $page , 20 , true);
 
     return $nids;
 }

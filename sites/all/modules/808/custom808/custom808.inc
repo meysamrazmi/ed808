@@ -117,11 +117,5 @@ function api_version_delete($id){
 /************************/
 
 function developer(){
-    $nid = 19700;
-    $relatives = db_select("relative_contents" , "relative")->fields("relative" , array())
-        ->condition("entity_id" , $nid)->condition("entity_type" , "node")->execute()->fetch();
-
-    adump(unserialize($relatives->contents_id));
-
     die();
 }
