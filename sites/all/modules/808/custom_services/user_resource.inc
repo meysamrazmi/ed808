@@ -301,3 +301,38 @@ function reCaptcha($key){
     }
     return FALSE;
 }
+
+function user_resource_posts($parameter , $uid){
+    global $user;
+    $query = db_select("node" , "node");
+    $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.bundle = 'latin_contents' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "pic" , "pic.fid = field_image.field_image_fid ");
+    $query->fields("node" , array("nid" , "title" , "created" , "changed" , "status"));
+    $query->addField("body" , "body_value" , "body");
+    $query->addField("pic" , "uri" , "picture");
+    $query->condition("node.type" , "latin_contents");
+    $query->condition("node.uid" , $uid);
+    if($user->uid != $uid) $query->condition("node.status" , '1');
+    elseif(!empty($parameter["publish"])){
+        switch ($parameter["publish"]){
+            case "1" :
+                $query->condition("node.status" , '1');
+                break;
+            case "-1" :
+                $query->condition("node.status" , '0');
+                break;
+        }
+    }
+    $query->orderBy("node.nid" , "DESC");
+    $query->range((isset($parameter["page"]) ? $parameter["page"] : 0) * 30 , 30);
+    $posts = $query->execute()->fetchAll();
+
+    foreach ($posts as $post){
+        $post->created = format_date($post->created, "teaser");
+        $post->changed = format_date($post->changed, "teaser");
+        $post->picture = (!empty($post->picture)) ? image_style_url("300x200" , $post->picture) : "";
+    }
+
+    return $posts;
+}

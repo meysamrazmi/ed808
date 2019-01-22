@@ -60,7 +60,7 @@ function contents_resource_index($parameter){
     if($filter == true) $query->condition("node.nid" , $custom_contents, "IN");
     $query->orderBy("node.nid" , "DESC");
     $count = clone ($query);
-    $query->range($parameter["page"]*30 , 30);
+    $query->range((isset($parameter["page"]) ? $parameter["page"] : 0) * 30 , 30);
     $contents = $query->execute()->fetchAll();
     if(empty($contents)) return ["contents" => array() , "count" => 0];
 
@@ -355,6 +355,9 @@ function content_resource_comments($parameter , $nid){
     return $comments;
 }
 function content_resource_relatives($parameter , $nid){
+    $node = db_select("node" , "node")->fields("node" , array())->condition("nid" , $nid)->condition("status" , 1)->execute()->fetch();
+    if(empty($node)) return services_error("This content is not found!" , 404);
+
     /*get the most relative 20 nids for $nid for each $parameter['page']*/
     $relatives_priority =  fetch_content_relatives($nid);
 
@@ -393,20 +396,20 @@ function content_resource_relatives($parameter , $nid){
  * find the most relative nodes for the $node_id based on the priority
  * node_topics has 4, node_categories has 3, node_tag has 2, node_types has 1
  * if the relatives did not find before it is computed and save in database
- * if there is record in database and is inserted befor 7 days ago it is updated again
+ * if there is record in database and is inserted before 3 days ago it is updated again
  * else the result fetch form database and split 20 rows based on $page and return the relative nids
  */
-function fetch_content_relatives($node_id){
+function fetch_content_relatives($node_id , $refresh = false){
 
     /*fetch the $node_id in db*/
     $relatives = db_select("relative_contents" , "relative")->fields("relative" , array())
             ->condition("entity_id" , $node_id)->condition("entity_type" , "node")->execute()->fetch();
 
-    /*find the timestamp for 7 days before*/
-    $time = strtotime('-7 day' , REQUEST_TIME);
+    /*find the timestamp for 5 days before*/
+    $time = strtotime('-5 day' , REQUEST_TIME);
 
     /*if there is no record or old record update compute again else fetch data from db*/
-    if(empty($relatives) || $relatives->date < $time){
+    if(empty($relatives) || $relatives->date < $time || $refresh){
         $priority = array();
 
         /*check relatives on topics with priority 4*/
@@ -464,7 +467,7 @@ function fetch_content_relatives($node_id){
                 $last[$max][$key] = $value;
                 $count++;
             }
-            elseif($count < 3){
+            elseif($count < $n){
                 $max = $value;
                 $last[$max][$key] = $value;
                 $count++;
@@ -476,7 +479,7 @@ function fetch_content_relatives($node_id){
          * */
         $priority = array();
         foreach ($last as $key=>$value){
-            $capacity = 3 - count($priority);
+            $capacity = $n - count($priority);
             if(($capacity - count($last[$key])) >= 0){
                 foreach ($value as $k=>$v) $priority[$k] = $v;
             }
@@ -500,6 +503,10 @@ function fetch_content_relatives($node_id){
     }
     else{
         $nids = unserialize($relatives->contents_id);
+        $nodes = db_select("node" , "node")->fields("node" , array("nid"));
+        $nodes->condition("node.nid" , array_keys($nids) , "IN")->condition("node.status" , 1);
+        $nodes = $nodes->execute()->fetchCol();
+        if(count($nodes) < count(array_keys($nids))) return fetch_content_relatives($node_id , true);
     }
 
     return $nids;

@@ -194,6 +194,31 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'posts' => array(
+                    'help' => 'Return user`s posts',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_posts',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                    ),
+                ),
             ),
         ),
         'contents' => array(
@@ -485,31 +510,6 @@ function custom_services_services_resources(){
                         )
                     ),
                 ),
-            ),
-        ),
-        'post' => array(
-            'operations' => array(
-                'index' => array(),
-                'create' => array(
-                    'help' => 'Create a post',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'post_resource'),
-                    'callback' => 'post_resource_create',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'data of api',
-                            'source' => 'data',
-                            'optional' => False
-                        ),
-                    )
-                ),
-                'update' => array(),
-                'retrieve' => array(),
-                'delete' => array(),
             ),
         ),
 	);
