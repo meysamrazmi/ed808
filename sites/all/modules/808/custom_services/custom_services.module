@@ -512,6 +512,27 @@ function custom_services_services_resources(){
                 ),
             ),
         ),
+        'web_form' => array(
+            'operations' => array(
+                'create' => array(
+                    'help' => 'Fill the web forms',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'web_form_resource'),
+                    'callback' => 'web_form_resource_create',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The data of request.',
+                            'source' => 'data',
+                            'optional' => False,
+                        ),
+                    ),
+                )
+            )
+        )
 	);
 }
 function upload_file($parameter) {
