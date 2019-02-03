@@ -281,26 +281,6 @@ function user_resource_nav_bar_info($parameter , $login){
     $result["token"] = $token["token"];
     return $result;
 }
-function reCaptcha($key){
-    $recaptcha_secret_key = variable_get('recaptcha_secret_key', '');
-    if (empty($key) || empty($recaptcha_secret_key)) {
-        return FALSE;
-    }
-
-    // Use drupal_http_request() to circumvent all issues with the Google library.
-    $recaptcha = new \ReCaptcha\ReCaptcha($recaptcha_secret_key, new \ReCaptcha\RequestMethod\Drupal7Post());
-
-    $resp = $recaptcha->verify(
-        $key,
-        ip_address()
-    );
-
-    if ($resp->isSuccess()) {
-        // Verified!
-        return TRUE;
-    }
-    return FALSE;
-}
 
 function user_resource_posts($parameter , $uid){
     global $user;
