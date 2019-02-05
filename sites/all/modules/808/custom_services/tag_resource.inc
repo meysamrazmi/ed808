@@ -38,7 +38,7 @@ function tag_resource_relationships_list($parameter , $url){
         $subquery->condition("contents.entity_type" , "node");
         $subquery->condition("contents.bundle" , "latin_contents");
         $subquery->addExpression("COUNT(contents.entity_id)" , "contentsCount");
-        $subquery->condition("contentsCount" , "3" , ">");
+        $subquery->havingCondition("contentsCount" , 3 , ">");
         $subquery->groupBy("contents.field_latin_tags_tid");
 
         /*query returns an array of tags with "tid and name" with 5 indexes*/
