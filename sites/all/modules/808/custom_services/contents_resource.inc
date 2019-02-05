@@ -449,6 +449,14 @@ function content_resource_relatives($parameter , $nid){
     $query->orderBy("node.nid" , "DESC");
     $relatives = $query->execute()->fetchAll();
 
+    /*fetch the types related to this nids*/
+    $query = db_select("taxonomy_term_data" , "term");
+    $query->join("field_data_field_latin_contents_types" , "type" , "term.tid = type.field_latin_contents_types_tid and type.bundle = 'latin_contents' ");
+    $query->fields("term" , array("tid" , "name"));
+    $query->fields("type" , array("entity_id"));
+    $query->condition("type.entity_id" , $nids , "IN");
+    $types = $query->execute()->fetchAll();
+
     /*
      * this part is for sort the result base on priority
      * and change the picture address and the time format
@@ -458,11 +466,15 @@ function content_resource_relatives($parameter , $nid){
         $relative->created = format_date($relative->created, "teaser");
         $relative->changed = format_date($relative->changed, "teaser");
         $relative->picture = (!empty($relative->picture)) ? image_style_url("300x200" , $relative->picture) : "";
+        $relative->types = array();
         $sorted[$relative->nid] = $relative;
     }
-    foreach($relatives_priority as $key => $value){
-        $relatives_priority[$key] = $sorted[$key];
-    }
+
+    /*add each type to its node*/
+    foreach ($types as $type) if(isset($sorted[$type->entity_id])) array_push($sorted[$type->entity_id]->types , array("tid" => $type->tid , "name" => $type->name));
+
+    /*sort the nodes based on priorities*/
+    foreach($relatives_priority as $key => $value) $relatives_priority[$key] = $sorted[$key];
     $relatives = array_values($relatives_priority);
 
     return $relatives;
