@@ -296,6 +296,7 @@ function contents_resource_filters($parameter  , $type){
     );
 }
 function content_resource_event_list($parameter , $url){
+    /*if $url == list then return the upcoming events from today until the end*/
     if(strcmp($url , "list") == 0) {
         $query = db_select("node", "node");
         $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
@@ -312,13 +313,22 @@ function content_resource_event_list($parameter , $url){
         $events = $query->execute()->fetchAll();
         return $events;
     }
+    /* if $url == all then return the events that is in a month == calender
+     * parameter[year] and parameter[month] is needed to find the events for specific time
+     */
     elseif(strcmp($url , "all") == 0){
+        /* First calculate the timestamp of the first and last days of the month that is requested to show
+         * NOTE: endMonth is tricky because the next month would be next year
+         */
         $year = (int)$parameter["year"]; $month = (int)$parameter["month"];
         $startMonth = mktime(0 , 0 , 0 , $month , 1 , $year);
         if($month < 12) $endMonth  = mktime(0 , 0 , 0 , $month+1 , 1 , $year);
         else $endMonth  = mktime(0 , 0 , 0 , 1 , 1 , $year+1);
         $endMonth = strtotime("-1 day" , $endMonth);
 
+        /* Fetch the events in the month
+         * NOTE: The order is Important for calculate the first day
+         */
         $query = db_select("node", "node");
         $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
         $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
@@ -329,7 +339,11 @@ function content_resource_event_list($parameter , $url){
         $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", $endMonth), '<=');
         $query->orderBy("eventtime.field_eventtime_value" , "ASC");
         $events = $query->execute()->fetchAll();
+        if(empty($events)) return array();
 
+        /* $times is an associative array that each key is equal the day of the month
+         * We used $day and $tomorrow for putting each event to its own day
+         */
         $start = $events[0]->eventtime;
         $start = explode(" " , $start);
         $start = explode("-" , $start[0]);
@@ -340,7 +354,10 @@ function content_resource_event_list($parameter , $url){
         foreach ($events as $event){
             $eTime = strtotime($event->eventtime);
             $continue = true;
-
+            /* while the day of the event is not found we go next day
+             * when the day is found we go to the next event
+             * NOTE: because the events are ordered by time we wont missed any event
+             */
             while ($continue) {
                 if ($eTime >= $day && $eTime < $tomorrow) {
                     $date = date('Y-m-d',$day);

@@ -24,3 +24,36 @@ function tag_resource_retrieve($tid , $parameter){
 
     return $tag;
 }
+/*----------------------------------------------------------*/
+/*-----------------relationships part-----------------------*/
+function tag_resource_relationships_list($parameter , $url){
+    /*
+     * This part return the most used tags in all contents
+     * with pic and description
+     * */
+    if(strcmp($url , "home") == 0){
+        /*subquery is used to find the most usage of the a tag in contents*/
+        $subquery = db_select("field_data_field_latin_tags" , "contents");
+        $subquery->fields("contents" , array("field_latin_tags_tid"));
+        $subquery->condition("contents.entity_type" , "node");
+        $subquery->condition("contents.bundle" , "latin_contents");
+        $subquery->addExpression("COUNT(contents.entity_id)" , "contentsCount");
+        $subquery->condition("contentsCount" , "3" , ">");
+        $subquery->groupBy("contents.field_latin_tags_tid");
+
+        /*query returns an array of tags with "tid and name" with 5 indexes*/
+        $query = db_select("taxonomy_term_data" , "tag");
+        $query->join("field_data_field_image" , " field_image" , "tag.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
+        $query->join("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+        $query->join($subquery , "contents" , "contents.field_latin_tags_tid = tag.tid");
+        $query->fields("tag", array("tid" , "name"));
+        $query->condition("tag.vid" , 33);
+        $query->condition("tag.description" , '','!=');
+        $query->isNotNull('tag.description');
+        $query->orderBy("contents.contentsCount" , "DESC")->orderBy("tag.tid" , "DESC");
+        $query->range(0 , 30);
+        $result = $query->execute()->fetchAll();
+        return $result;
+    }
+}
+/*----------------------------------------------------------*/
