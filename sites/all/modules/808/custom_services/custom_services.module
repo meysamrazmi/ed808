@@ -316,7 +316,6 @@ function custom_services_services_resources(){
                             'description' => 'Just use for url address.',
                             'source' => array('path' => 0),
                             'optional' => False,
-                            'default' => "list"
                         ),
                     )
                 ),

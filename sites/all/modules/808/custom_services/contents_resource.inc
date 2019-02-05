@@ -49,6 +49,14 @@ function contents_resource_index($parameter){
     }
     if($filter == true && empty($custom_contents)) return ["contents" => array() , "count" => 0];
 
+    $query = db_select("field_data_field_latin_contents_types" , "event");
+    $query->fields("event" , array("entity_id"));
+    $query->condition("event.entity_type" , "node");
+    $query->condition("event.bundle" , "latin_contents");
+    $query->condition("event.field_latin_contents_types_tid" , 4058);
+    $events = $query->execute()->fetchCol();
+
+
     /*fetch content list data*/
     $query = db_select("node" , "node");
     $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
@@ -57,6 +65,7 @@ function contents_resource_index($parameter){
     $query->addField("file" , "uri" , "picture");
     $query->condition("node.status" , 1);
     $query->condition("node.type" , "latin_contents");
+    if(!empty($events))$query->condition("node.nid" , $events , "NOT IN");
     if($filter == true) $query->condition("node.nid" , $custom_contents, "IN");
     $query->orderBy("node.nid" , "DESC");
     $count = clone ($query);
@@ -270,6 +279,7 @@ function contents_resource_filters($parameter  , $type){
     $query = db_select("taxonomy_term_data" , "term_data");
     $query->fields("term_data" , array("tid" , "vid" , "name"));
     $query->condition("term_data.vid" , array(30 , 34 , 35) ,"IN");
+    $query->condition("term_data.tid" , 4058 ,"<>");
     $results = $query->execute()->fetchAll();
 
     /*categorize each filter*/
@@ -286,20 +296,68 @@ function contents_resource_filters($parameter  , $type){
     );
 }
 function content_resource_event_list($parameter , $url){
-    $query = db_select("node" , "node");
-    $query->join("field_data_field_latin_contents_types" , "contents_types" , "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
-    $query->join("field_data_field_eventtime" , "eventtime" , "eventtime.entity_id = node.nid");
-    $query->leftJoin('field_data_field_company', 'company', 'company.entity_id = node.nid');
-    $query->leftJoin('field_data_field_ifwebinar', 'ifwebinar', 'ifwebinar.entity_id = node.nid');
-    $query->fields("node" , array("nid" , "title"));
-    $query->addField("eventtime" , "field_eventtime_value" , "eventtime");
-    $query->addField("company" , "field_company_value" , "company");
-    $query->addField("ifwebinar" , "field_ifwebinar_value" , "webinar");
-    $query->condition('node.status', 1);
-    $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", time()) , '>=');
-    $query->orderBy('eventtime.field_eventtime_value', 'ASC');
-    $events = $query->execute()->fetchAll();
-    return $events;
+    if(strcmp($url , "list") == 0) {
+        $query = db_select("node", "node");
+        $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
+        $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
+        $query->leftJoin('field_data_field_company', 'company', 'company.entity_id = node.nid');
+        $query->leftJoin('field_data_field_ifwebinar', 'ifwebinar', 'ifwebinar.entity_id = node.nid');
+        $query->fields("node", array("nid", "title"));
+        $query->addField("eventtime", "field_eventtime_value", "eventtime");
+        $query->addField("company", "field_company_value", "company");
+        $query->addField("ifwebinar", "field_ifwebinar_value", "webinar");
+        $query->condition('node.status', 1);
+        $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", time()), '>=');
+        $query->orderBy('eventtime.field_eventtime_value', 'ASC');
+        $events = $query->execute()->fetchAll();
+        return $events;
+    }
+    elseif(strcmp($url , "all") == 0){
+        $year = (int)$parameter["year"]; $month = (int)$parameter["month"];
+        $startMonth = mktime(0 , 0 , 0 , $month , 1 , $year);
+        if($month < 12) $endMonth  = mktime(0 , 0 , 0 , $month+1 , 1 , $year);
+        else $endMonth  = mktime(0 , 0 , 0 , 1 , 1 , $year+1);
+        $endMonth = strtotime("-1 day" , $endMonth);
+
+        $query = db_select("node", "node");
+        $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
+        $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
+        $query->fields("node", array("nid", "title"));
+        $query->addField("eventtime", "field_eventtime_value", "eventtime");
+        $query->condition('node.status', 1);
+        $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", $startMonth), '>=');
+        $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", $endMonth), '<=');
+        $query->orderBy("eventtime.field_eventtime_value" , "ASC");
+        $events = $query->execute()->fetchAll();
+
+        $start = $events[0]->eventtime;
+        $start = explode(" " , $start);
+        $start = explode("-" , $start[0]);
+        $day = mktime(0 , 0 , 0 , $start[1] , $start[2] , $start[0]);
+        $tomorrow = strtotime("+ 1 day" , $day);
+
+        $times = array();
+        foreach ($events as $event){
+            $eTime = strtotime($event->eventtime);
+            $continue = true;
+
+            while ($continue) {
+                if ($eTime >= $day && $eTime < $tomorrow) {
+                    $date = date('Y-m-d',$day);
+                    $date = explode("-" , $date);
+                    $date = $date[2];
+                    if(!isset($times[$date])) $times[$date] = array();
+                    array_push($times[$date], $event);
+                    $continue = false;
+                }
+                else{
+                    $day = $tomorrow;
+                    $tomorrow = strtotime("+1 day" , $tomorrow);
+                }
+            }
+        }
+        return $times;
+    }
 }
 function content_resource_comments($parameter , $nid){
     $query = db_select("comment" , "comment");
