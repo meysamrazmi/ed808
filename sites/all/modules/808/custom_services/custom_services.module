@@ -498,14 +498,37 @@ function custom_services_services_resources(){
             ),
         ),
         'file' => array(
-            'actions' => array(
-                'upload' => array(
+            'operations' => array(
+                'create' => array(
                     'help' => 'Upload a file with raw data.',
                     'callback' => 'upload_file',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'The hash of url.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+                'delete' => array(
+                    'help' => 'Delete a file with raw data.',
+                    'callback' => 'delete_file',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'fid',
+                            'type' => 'int',
+                            'description' => 'fid for deleting',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                        ),
                         array(
                             'name' => 'parameter',
                             'type' => 'array',
@@ -562,7 +585,7 @@ function custom_services_services_resources(){
 	);
 }
 function upload_file($parameter) {
-    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "file"))) return services_error(t('Failed to access'), 10);
+    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "file"))) return services_error(t('Failed to access'), 403);
     global $user;
     if($user == 0) return services_error(t('You should be login!'), 13);
     $files =  $_FILES;
@@ -600,6 +623,17 @@ function upload_file($parameter) {
         }
     }
     return $files;
+}
+function delete_file($fid , $parameter = array()){
+    if(!isset($parameter["hash"]) || !(hash_true($parameter["hash"] , "file"))) return services_error(t('Failed to access'), 403);
+    $query = db_select("file_usage" , "u");
+    $query->fields("u" , array());
+    $query->condition("u.fid" , $fid);
+    $usage = $query->execute()->fetchAll();
+    if(count($usage) == 1 && $usage[0]->fid == $usage[0]->id){
+        $file = file_load($fid);
+        return file_delete($file , true);
+    }
 }
 function hash_true($hash , $resource){
     $new_hash = hash_hmac("sha256" , $resource , "@Civil808Android@Saze808@" , false);

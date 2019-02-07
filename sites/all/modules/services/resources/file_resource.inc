@@ -12,6 +12,7 @@
  */
 function _file_resource_definition() {
   return array(
+    /*
     'file' => array(
       'operations' => array(
         'create' => array(
@@ -147,6 +148,7 @@ function _file_resource_definition() {
         ),
       ),
     ),
+    */
   );
 }
 

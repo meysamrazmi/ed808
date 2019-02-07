@@ -27,7 +27,7 @@ function user_resource_retrieve($uid , $parameter){
     $query->addField("skills" , "field_skills_value" , "skills");
     $query->addField("mobile" , "field_mobile_value" , "mobile");
     $query->addField("cv" , "uri" , "cv");
-    $query->addField("cv" , "origname" , "cv_name");
+    $query->addField("cv" , "origname" , "cvName");
     $query->condition('user.uid' , $uid);
     $account = $query->execute()->fetch();
     if(empty($account)) return services_error("User is not exist!" , 404);
@@ -67,6 +67,8 @@ function user_resource_update_data($data , $uid){
     $account = user_load($uid);
     if($user->uid != $account->uid) return services_error("You do not have permission for this action" , 18);
 
+    $deleted_fid = array();
+
     if(isset($data["username"]) && !empty($data["username"])){
         $query = db_select("users" , "user");
         $query->fields("user" , array("name"));
@@ -89,13 +91,37 @@ function user_resource_update_data($data , $uid){
         $account->pass = user_hash_password(trim($data['password']));
     }
     if(isset($data["picture"]) || (!empty($data["picture"]) && strcmp($data["picture"]["type"] , "image") == 0)){
-        $account->picture = (object)$data["picture"];
+        $old_pic_fid = isset($account->picture->fid) ? $account->picture->fid : 0;
+        if($data["picture"] === "delete" && !empty($account->picture)){
+            $deleted_fid[] = $old_pic_fid;
+            $account->picture = 0;
+        }
+        else {
+            if(isset($account->picture->fid) && $account->picture->fid != $data["picture"]["fid"]) $deleted_fid[] = $old_pic_fid;
+            $data["picture"]["status"] = 0;
+            $account->picture = (object)$data["picture"];
+        }
     }
     if(isset($data["background_image"]) || (!empty($data["background_image"]) && strcmp($data["background_image"]["type"] , "image") == 0)){
-        $account->field_image['und'][0] = $data["background_image"];
+        $old_image_fid = !empty($account->field_image['und'][0]) ? $account->field_image['und'][0]["fid"] : 0;
+        if($data["background_image"] === "delete" && !empty($account->field_image)){
+            $deleted_fid[] = $old_image_fid;
+            $account->field_image = array();
+        }elseif (is_array($data["background_image"])) {
+            if(isset($account->field_image['und'][0]) && $account->field_image['und'][0]["fid"] != $data["background_image"]["fid"]) $deleted_fid[] = $old_image_fid;
+            $account->field_image['und'][0] = $data["background_image"];
+        }
     }
     if(isset($data["cv"])){
-        $account->field_files['und']['0'] = $data["cv"];
+        $old_file_fid = !empty($account->field_files['und'][0]) ? $account->field_files['und'][0]["fid"] : 0;
+        if($data["cv"] === "delete" && !empty($account->field_files)){
+            $deleted_fid[] = $old_file_fid;
+            $account->field_files = array();
+        }elseif (is_array($data["cv"])) {
+            if(isset($account->field_files['und'][0]) && $account->field_files['und'][0]["fid"] != $data["cv"]["fid"]) $deleted_fid[] = $old_file_fid;
+            $data["cv"]["display"] = 1;
+            $account->field_files['und']['0'] = $data["cv"];
+        }
     }
     if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
     if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
@@ -107,7 +133,12 @@ function user_resource_update_data($data , $uid){
     if(isset($data["about"])) $account->field_about_me["und"][0]["value"] = $data["about"];
 
     user_save($account);
-    return user_resource_information(array() , $account->uid);
+
+    module_invoke_all('field_storage_pre_update' , "user" , $account);
+
+    foreach ($deleted_fid as $fid) delete_file($fid , array("hash" => hash_hmac("sha256" , "file" , "@Civil808Android@Saze808@" , false)));
+
+    return user_resource_retrieve($account->uid , array());
 }
 /*---------------------actions part------------------------------------*/
 function user_resource_login($data){
