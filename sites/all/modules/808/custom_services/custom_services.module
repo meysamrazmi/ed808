@@ -150,23 +150,6 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
-                'subscribe_email' => array(
-                    'help' => 'Insert the user`s Email',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
-                    'callback' => 'user_resource_subscribe_email',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'User data',
-                            'source' => 'data',
-                            'optional' => FALSE,
-                        ),
-                    ),
-                ),
             ),
             'relationships' => array(
                 'nav_bar_info' => array(

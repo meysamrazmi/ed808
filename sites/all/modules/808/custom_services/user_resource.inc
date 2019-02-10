@@ -265,29 +265,6 @@ function user_resource_exist($data){
     if(!empty($result)) return true;
     else return false;
 }
-
-function user_resource_subscribe_email($data){
-    $email = $data["email"];
-    $path = "sites/all/modules/808/subscribe_email.json";
-    $string = file_get_contents($path);
-    $data = json_decode($string, true);
-    if($data == '') $data = array();
-    else{
-        if(in_array($email, $data)) return false;
-    }
-    array_push($data, $email);
-    $json = json_encode($data);
-
-    file_put_contents($path, $json);
-
-    $node = node_load(19759);
-    $body = $node->body["und"][0]["value"];
-    $body .= "<div>" . $email . "</div>";
-    $node->body["und"][0]["value"] = $body;
-    node_save($node);
-    return $node;
-}
-
 /*---------------------relationships part------------------------------*/
 function user_resource_nav_bar_info($parameter , $login){
     global $user;
