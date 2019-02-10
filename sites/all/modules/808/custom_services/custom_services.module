@@ -268,7 +268,7 @@ function custom_services_services_resources(){
                     ),
                 ),
                 'retrieve' => array(
-                    'help' => 'return a contents',
+                    'help' => 'return a content',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
                     'callback' => 'contents_resource_retrieve',
                     'access callback' => 'user_access',
@@ -292,6 +292,64 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'create' => array(
+                    'help' => 'create a content',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_create',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => 'data',
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+                'update' => array(
+                    'help' => 'update a content',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_update',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'nid',
+                            'type' => 'int',
+                            'description' => 'nid for update.',
+                            'source' => array("path" => 0),
+                            'optional' => False,
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'data of request.',
+                            'source' => 'data',
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+                'delete' => array(
+                    'help' => 'delete a content',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_delete',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'nid',
+                            'type' => 'int',
+                            'description' => 'nid for update.',
+                            'source' => array("path" => 0),
+                            'optional' => False,
+                        ),
+                    ),
+                )
             ),
             'relationships' => array(
                 'filters' => array(

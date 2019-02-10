@@ -239,6 +239,67 @@ function contents_resource_retrieve($nid , $parameter){
     return ["content" => $content , "author" => $author];
 }
 
+function contents_resource_create($data){
+    global $user;
+    if(!$user->uid > 0) return services_error("You should login for this action!" , 403);
+
+    $node = new stdClass();
+    $node->title  = $data['title'];
+    $node->type  = "latin_contents";
+    node_object_prepare($node);
+    $node->language = 'en';
+    $node->uid  = $user->uid;
+    $node->status = !empty($data["publish"]) && $data["publish"] == 1 ? 1 : 0;
+    $node->comment = 2;
+    $node->created = REQUEST_TIME;
+    $node->body['und'][0]['value'] = $data['body'];
+    $node->body['und'][0]['summary'] = '';
+    $node->body['und'][0]['format'] = 'full_html';
+    $node->field_image  = !empty($data['field_image']) ? $data["field_image"] : array();
+    node_save($node);
+
+    module_invoke_all('field_storage_pre_update' , "node" , $node);
+
+    return $node;
+}
+function contents_resource_update($nid , $data){
+    global $user;
+    if(!$user->uid > 0) return services_error("You should login for this action!" , 403);
+    $node = node_load($nid);
+    if(!$node) return services_error("Content is not found!" , 404);
+    if($user->uid != $node->uid && !in_array("administrator" , $user->roles)) return services_error("You can not do this action!" , 403);
+
+    $update = false;
+    if(isset($data['title']) && !empty($data['title']) && $node->title !== $data["title"]){
+        $node->title  = $data['title'];
+        $update = true;
+    }
+    if(strlen($data["publish"]) > 0 && $node->status !== $data["publish"]) {
+        $node->status = $data["publish"];
+        $update = true;
+    }
+    if(isset($data['body']) && !empty($data['body']) && $node->body['und'][0]['value'] !== $data["body"]) {
+        $node->body['und'][0]['value'] = $data['body'];
+        $update = true;
+    }
+
+    if($update) {
+        node_save($node);
+        module_invoke_all('field_storage_pre_update' , "node" , $node);
+    }
+
+    return $node;
+}
+function contents_resource_delete($nid){
+    global $user;
+    if(!$user->uid > 0) return services_error("You should login for this action!" , 403);
+    $node = db_select("node" , "node")->fields("node" , array())->condition("nid" , $nid)->execute()->fetch();
+    if(empty($node)) return services_error("Content is not found!" , 404);
+    if($user->uid != $node->uid && !in_array("administrator" , $user->roles)) return services_error("You can not do this action!" , 403);
+    node_delete($nid);
+    return true;
+}
+
 /*
  * search value in to the titles and bodies and tags
  * return array of nids
