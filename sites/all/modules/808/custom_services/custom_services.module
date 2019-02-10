@@ -220,6 +220,32 @@ function custom_services_services_resources(){
                     ),
                 ),
             ),
+            'targeted_actions' => array(
+                'follow' => array(
+                    'help' => 'follow or unfollow a user',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'flag_resource'),
+                    'callback' => 'flag_resource_user_follow',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+            ),
         ),
         'contents' => array(
             'operations' => array(
@@ -370,6 +396,32 @@ function custom_services_services_resources(){
                     )
                 ),
             ),
+            'targeted_actions' => array(
+                'bookmark' => array(
+                    'help' => 'bookmark or unbookmark a content',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'flag_resource'),
+                    'callback' => 'flag_resource_content_bookmark',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'nid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'content id',
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+            ),
         ),
         'tag' => array(
             'operations' => array(
@@ -426,7 +478,33 @@ function custom_services_services_resources(){
                         ),
                     )
                 )
-            )
+            ),
+            'targeted_actions' => array(
+                'bookmark' => array(
+                    'help' => 'bookmark or unbookmark a tag',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'flag_resource'),
+                    'callback' => 'flag_resource_tag_bookmark',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'tid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'tag id',
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+            ),
         ),
         'comments' => array(
             'operations' => array(
@@ -536,27 +614,6 @@ function custom_services_services_resources(){
                             'source' => array('param' => 'parameter'),
                             'optional' => False,
                         ),
-                    ),
-                ),
-            ),
-        ),
-        'flag' => array(
-            'operations' => array(
-                'create' => array(
-                    'help' => 'bookmark a content or taxonomy',
-                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'flag_resource'),
-                    'callback' => 'flag_resource_create',
-                    'access callback' => 'user_access',
-                    'access arguments' => array('access content'),
-                    'access arguments append' => FALSE,
-                    'args' => array(
-                        array(
-                            'name' => 'data',
-                            'type' => 'array',
-                            'description' => 'Bookmark or un-bookmark a node or taxonomy',
-                            'source' => 'data',
-                            'optional' => FALSE,
-                        )
                     ),
                 ),
             ),
