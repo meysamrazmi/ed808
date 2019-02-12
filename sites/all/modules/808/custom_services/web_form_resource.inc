@@ -3,12 +3,14 @@
 function web_form_resource_create($data){
     global $user;
 
-    if(!isset($data["reCaptchaToken"]) || empty($data["reCaptchaToken"])) return services_error("ReCaptcha is not set!" , 401);
+    if(!$user->uid > 0) {
+        if (!isset($data["reCaptchaToken"]) || empty($data["reCaptchaToken"])) return services_error("ReCaptcha is not set!", 401);
 
-    /*check re captcha*/
-    $captcha = reCaptcha($data["reCaptchaToken"]);
-    if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
-    if($captcha == false) return services_error("ReCaptcha Error!" , 401);
+        /*check re captcha*/
+        $captcha = reCaptcha($data["reCaptchaToken"]);
+        if ($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
+        if ($captcha == false) return services_error("ReCaptcha Error!", 401);
+    }
 
     if(!isset($data["nid"]) || empty($data["nid"])) return services_error("Nid is required!" , 400);
     $node = node_load($data["nid"]);

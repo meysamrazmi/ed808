@@ -462,6 +462,30 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'clap' => array(
+                    'help' => 'clapping a content',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'vote_resource'),
+                    'callback' => 'vote_resource_clap_content',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'nid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'content id',
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
+                    ),
+                ),
             ),
         ),
         'tag' => array(
@@ -612,6 +636,32 @@ function custom_services_services_resources(){
                             'source' => 'data',
                             'optional' => FALSE,
                         )
+                    ),
+                ),
+            ),
+            'targeted_actions' => array(
+                'like' => array(
+                    'help' => 'clapping a content',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'vote_resource'),
+                    'callback' => 'vote_resource_like_comment',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'cid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'comment id',
+                        ),
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
                     ),
                 ),
             ),

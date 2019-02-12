@@ -195,6 +195,62 @@ function custom_services_update_7105(){
     db_create_table('relative_contents', $schema['relative_contents']);
 }
 
+/**
+ * Create new database table {clapping}.
+ */
+function custom_services_update_7106(){
+    $schema['clapping'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => 'Primary Key - id',
+            ),
+            'entity_type' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The entity type',
+            ),
+            'bundle' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The bundle',
+            ),
+            'entity_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+                'size' => 'small',
+                'description' => 'The if of entity',
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'size' => 'small',
+                'not null' => TRUE,
+                'description' => t('User id'),
+            ),
+            'vote' => array(
+                'type' => 'int',
+                'size' => 'normal',
+                'not null' => TRUE,
+                'description' => t('vote pint.'),
+            ),
+            'date' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when an action has been happened.',
+            ),
+        ),
+
+        'primary key' => array('id'),
+    );
+    db_create_table('clapping', $schema['clapping']);
+}
+
 /*
  * Implementation of hook_install()
 */
