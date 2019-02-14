@@ -46,7 +46,7 @@ function user_resource_retrieve($uid , $parameter){
     else unset($account->picture);
     if(!empty($account->background_image)) $account->background_image = image_style_url("1360x500_blur", $account->background_image);
     else unset($account->background_image);
-    if(!empty($account->cv_url)) $account->cv_url = generate_file_address($account->cv_url);
+    if(!empty($account->cv)) $account->cv = generate_file_address($account->cv);
     else {
         unset($account->cv_url);
         unset($account->cv_name);
@@ -144,6 +144,11 @@ function user_resource_update_data($data , $uid){
 function user_resource_login($data){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
 
+    /*check re captcha*/
+    $captcha = reCaptcha($data["reCaptchaToken"]);
+    if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
+    if($captcha == false) return services_error("ReCaptcha Error!" , 401);
+
     $login_user = login($data);
 
     return (array)$login_user;
@@ -177,19 +182,12 @@ function login($data){
      * check flood for attempting to login frequently
      * */
 
-    /*check re captcha*/
-    $captcha = reCaptcha($data["reCaptchaToken"]);
-    if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
-    if($captcha == false) return services_error("ReCaptcha Error!" , 401);
-
     if ($uid) {
         $user = user_load($uid);
         if ($user->uid) {
             user_login_finalize();
             $login_data = new stdClass();
             $login_data->uid = $user->uid;
-            $login_data->sessid = session_id();
-            $login_data->session_name = session_name();
             $login_data->token = drupal_get_token('services');
 
             return $login_data;
@@ -242,14 +240,12 @@ function register($new_user){
     if(!empty($result)) return services_error(t("A user with this username Email is already exist!") , 18);
 
     /*create new user*/
-    $user = user_save('', $new_user);
+    $user = user_save('' , $new_user);
 
     /*login user*/
     user_login_finalize();
     $newUser = new stdClass();
     $newUser->uid = $user->uid;
-    $newUser->sessid = session_id();
-    $newUser->session_name = session_name();
     $newUser->token = drupal_get_token('services');
 
     return $newUser;
@@ -323,4 +319,88 @@ function user_resource_posts($parameter , $uid){
     }
 
     return $posts;
+}
+
+function user_resource_following($parameter , $uid){
+    /*fetch the data of the user following*/
+    $query = db_select("flagging" , "flag");
+    $query->join("users" , "user" , "flag.entity_id = user.uid");
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id and full_name.entity_type = 'user' and full_name.bundle = 'user' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' and field_image.bundle = 'user' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->condition("flag.entity_type" , "user");
+    $query->condition("flag.fid" , 3);
+    $query->condition("flag.uid" , $uid);
+    $query->fields("user" , array("uid" , "name"));
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+    $query->addField("image" , "uri" , "picture");
+
+    /*sort base on time or name*/
+    $sort_base = empty($parameter["sort"]) ? "time" : $parameter["sort"];
+    if(!empty($parameter["sort_dir"]) && ($parameter["sort_dir"] === "ASC" || $parameter["sort_dir"] === "DESC")) $sort_dir = $parameter["sort_dir"];
+    else $sort_dir = "DESC";
+    switch ($sort_base){
+        case "time" :
+            $query->orderBy("flag.timestamp" , $sort_dir);
+            break;
+        case "name" :
+            $query->orderBy("full_name.field_full_name_value" , $sort_dir)->orderBy("user.name" , $sort_dir);
+            break;
+        default:
+            $query->orderBy("flagging.timestamp" , "DESC");
+            break;
+    }
+
+    $following = $query->execute()->fetchAll();
+
+    /*post process on followings*/
+    foreach($following as $value){
+        if(empty($value->full_name)) $value->full_name = $value->name;
+        unset($value->name);
+        if(!empty($value->picture)) $value->picture = image_style_url("200x200" , $value->picture);
+    }
+
+    return $following;
+}
+
+function user_resource_follower($parameter , $uid){
+    /*fetch the data of the user following*/
+    $query = db_select("flagging" , "flag");
+    $query->join("users" , "user" , "flag.uid = user.uid");
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id and full_name.entity_type = 'user' and full_name.bundle = 'user' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' and field_image.bundle = 'user' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->condition("flag.entity_type" , "user");
+    $query->condition("flag.fid" , 3);
+    $query->condition("flag.entity_id" , $uid);
+    $query->fields("user" , array("uid" , "name"));
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+    $query->addField("image" , "uri" , "picture");
+
+    /*sort base on time or name*/
+    $sort_base = empty($parameter["sort"]) ? "time" : $parameter["sort"];
+    if(!empty($parameter["sort_dir"]) && ($parameter["sort_dir"] === "ASC" || $parameter["sort_dir"] === "DESC")) $sort_dir = $parameter["sort_dir"];
+    else $sort_dir = "DESC";
+    switch ($sort_base){
+        case "time" :
+            $query->orderBy("flag.timestamp" , $sort_dir);
+            break;
+        case "name" :
+            $query->orderBy("full_name.field_full_name_value" , $sort_dir)->orderBy("user.name" , $sort_dir);
+            break;
+        default:
+            $query->orderBy("flagging.timestamp" , "DESC");
+            break;
+    }
+
+    $follower = $query->execute()->fetchAll();
+
+    /*post process on followings*/
+    foreach($follower as $value){
+        if(empty($value->full_name)) $value->full_name = $value->name;
+        unset($value->name);
+        if(!empty($value->picture)) $value->picture = image_style_url("200x200" , $value->picture);
+    }
+
+    return $follower;
 }

@@ -202,6 +202,56 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'following' => array(
+                    'help' => 'Return user`s following',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_following',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                    ),
+                ),
+                'follower' => array(
+                    'help' => 'Return user`s follower',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_follower',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                    ),
+                ),
             ),
             'targeted_actions' => array(
                 'follow' => array(
@@ -790,7 +840,7 @@ function hash_true($hash , $resource){
 }
 function generate_file_address($url){
     $url = substr($url , 8);
-    $url = "http://api.ed808.com/sites/default/files" . $url;
+    $url = "https://ed808.com:92/sites/default/files" . $url;
     return $url;
 }
 function reCaptcha($key){

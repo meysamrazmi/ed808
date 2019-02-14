@@ -117,7 +117,7 @@ function contents_resource_index($parameter){
 
     $contents = array_values($contents_r);
 
-    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $parameter["page"]];
+    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => isset($parameter["page"]) ? $parameter["page"] : 0];
 }
 function contents_resource_retrieve($nid , $parameter){
     /*fetch content data*/
@@ -148,6 +148,18 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
     $query->condition("node.nid" , $nid);
     $query->condition("node.status" , 1);
+
+    /*subquery calculate the sum of the claps for this content*/
+    $subquery = db_select("clapping" , "clap");
+    $subquery->fields("clap" , array("entity_id"));
+    $subquery->addExpression("SUM(vote)" , "clap_point");
+    $subquery->groupBy("entity_id");
+    $subquery->condition("clap.entity_type" , "node");
+    $subquery->condition("clap.bundle" , "latin_contents");
+    $subquery->condition("clap.entity_id" , $nid);
+    $query->leftJoin($subquery , "clap" , "node.nid = clap.entity_id");
+    $query->addField("clap" , "clap_point" , "clap_point");
+
     $content = $query->execute()->fetch();
     if(empty($content)) return services_error("This content is not found!" , 404);
 
@@ -162,6 +174,7 @@ function contents_resource_retrieve($nid , $parameter){
         $timestamp = mktime($times[0], $times[1], $times[2], $date[1], $date[2], $date[0]);
         $content->event_time = date("F j, Y" , $timestamp);
     }
+    $content->clap_point = empty($content->clap_point) ? 0 : (int) $content->clap_point;
     $content->references =  array();
     $content->files =  array();
     $content->type =  array();
@@ -438,34 +451,52 @@ function content_resource_event_list($parameter , $url){
     }
 }
 function content_resource_comments($parameter , $nid){
+    global $user;
+
+    $likes = db_select("clapping" , "likes");
+    $likes->fields("likes" , array("entity_id"));
+    $likes->addExpression("SUM(vote)" , "likes");
+    $likes->groupBy("entity_id");
+    $likes->condition("likes.entity_type" , "comment");
+    $likes->condition("likes.bundle" , "comment");
+
+    /*query fetch the just the parent comments*/
     $query = db_select("comment" , "comment");
     $query->join("field_data_comment_body" , "body" , "body.entity_id = comment.cid");
     $query->join("users" , "user" , "user.uid = comment.uid");
     $query->leftJoin("field_data_field_full_name" , "full_name" , "full_name.entity_id = user.uid and full_name.entity_type = 'user' ");
     $query->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
+    $query->leftJoin("clapping" , "user_like" , "comment.cid = user_like.entity_id and user_like.entity_type = 'comment' and user_like.uid = ' " . $user->uid . " ' ");
+    $query->leftJoin($likes , "likes" , "comment.cid = likes.entity_id");
     $query->fields("comment" , array("cid" , "pid" , "uid" , "created" , "changed"));
     $query->addField("body" , "comment_body_value" , "body");
     $query->addField("user" , "name" , "author_username");
     $query->addField("full_name" , "field_full_name_value" , "author_name");
     $query->addField("user_pic" , "uri" , "author_pic");
+    $query->addField("user_like" , "vote" , "user_like");
+    $query->addField("likes" , "likes" , "likes");
     $query->condition("comment.nid" , $nid);
     $query->condition("comment.pid" , 0);
     $query->orderBy("comment.cid" , "ASC");
     $query->range(isset($parameter["page"])? $parameter["page"]*30 : 0 , 30);
 
+    /*query fetch the just the children of the parent comments*/
     $subquery = db_select("comment" , "comment");
     $subquery->join($query , "parent" , "parent.cid = comment.pid");
     $subquery->join("field_data_comment_body" , "body" , "body.entity_id = comment.cid");
     $subquery->join("users" , "user" , "user.uid = comment.uid");
     $subquery->leftJoin("field_data_field_full_name" , "full_name" , "full_name.entity_id = user.uid and full_name.entity_type = 'user' ");
     $subquery->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
+    $subquery->leftJoin("clapping" , "user_like" , "comment.cid = user_like.entity_id and user_like.entity_type = 'comment' and user_like.uid = ' " . $user->uid . " ' ");
+    $subquery->leftJoin($likes , "likes" , "comment.cid = likes.entity_id");
     $subquery->fields("comment" , array("cid" , "pid" , "uid" , "created" , "changed"));
     $subquery->addField("body" , "comment_body_value" , "body");
     $subquery->addField("user" , "name" , "author_username");
     $subquery->addField("full_name" , "field_full_name_value" , "author_name");
     $subquery->addField("user_pic" , "uri" , "author_pic");
+    $subquery->addField("user_like" , "vote" , "user_like");
+    $subquery->addField("likes" , "likes" , "likes");
     $subquery->orderBy("comment.cid" , "ASC");
-
 
     $comments = $query->execute()->fetchAll();
     $children = $subquery->execute()->fetchAll();
@@ -473,6 +504,8 @@ function content_resource_comments($parameter , $nid){
     $associate_comments = array();
     foreach ($comments as $comment){
         $comment->replies = array();
+        $comment->user_like = empty($comment->user_like) ? false : true;
+        $comment->likes = empty($comment->likes) ? 0 : (int) $comment->likes;
         $comment->created = format_date($comment->created);
         $comment->changed = format_date($comment->changed);
         if(!empty($comment->author_pic)) $comment->author_pic = image_style_url("200x200", $comment->author_pic);
@@ -480,6 +513,8 @@ function content_resource_comments($parameter , $nid){
     }
     foreach ($children as $child){
         if(isset($associate_comments[$child->pid])) {
+            $child->user_like = empty($child->user_like) ? false : true;
+            $child->likes = empty($child->likes) ? 0 : (int) $child->likes;
             $child->created = format_date($child->created);
             $child->changed = format_date($child->changed);
             if(!empty($child->author_pic)) $child->author_pic = image_style_url("200x200", $child->author_pic);
