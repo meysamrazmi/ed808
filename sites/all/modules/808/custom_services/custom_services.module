@@ -252,6 +252,81 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'bookmark' => array(
+                    'help' => 'Return user`s bookmarks',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_bookmarks',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                    ),
+                ),
+                'favorite_content' => array(
+                    'help' => 'Return the contents that are liked by user',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_favorite_content',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                    ),
+                ),
+                'favorite_comment' => array(
+                    'help' => 'Return the comments that are liked by user',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_favorite_comments',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'uid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'user id',
+                        ),
+                    ),
+                ),
             ),
             'targeted_actions' => array(
                 'follow' => array(

@@ -202,7 +202,7 @@ function user_resource_register($data){
     if(!isset($data['username']) || empty($data['username'])) return services_error(t("Username is required!") , 401);
     if(!isset($data['password']) || empty($data['password'])) return services_error(t("Password is required!") , 401);
     if(!isset($data['email']) || empty($data['email'])) return services_error(t("Email is required!") , 401);
-    if(!isset($data['full_name']) || empty($data['full_name'])) return services_error(t("Email is required!") , 401);
+    if(!isset($data['full_name']) || empty($data['full_name'])) return services_error(t("Full name is required!") , 401);
     if(!isset($data['reCaptchaToken']) || empty($data['reCaptchaToken'])) return services_error(t("ReCaptcha is required!") , 401);
 
     $captcha = reCaptcha($data["reCaptchaToken"]);
@@ -219,7 +219,7 @@ function user_resource_register($data){
             DRUPAL_AUTHENTICATED_RID => 'authenticated user',
         ),
         'field_laws' => array('und' => array(0 => array('value' => 1))),
-        'full_name' => array('und' => array(0 => array('value' => $data["full_name"]))),
+        'field_full_name' => array('und' => array(0 => array('value' => $data["full_name"]))),
     );
 
     return (array) register($new_user);
@@ -403,4 +403,73 @@ function user_resource_follower($parameter , $uid){
     }
 
     return $follower;
+}
+
+function user_resource_bookmarks($parameter , $uid){
+    $query = db_select("flagging" , "flag");
+    $query->join("node" , "node" , "flag.entity_id = node.nid and node.status = '1' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
+    $query->fields("node" , array("nid" , "title" , "created" , "changed"));
+    $query->addField("file" , "uri" , "picture");
+    $query->condition("flag.uid" , $uid);
+    $query->condition("flag.fid" , 1);
+    $query->condition("flag.entity_type" , "node");
+    $contents = $query->execute()->fetchAll();
+
+    foreach($contents as $content){
+        $content->created = format_date($content->created, "teaser");
+        $content->changed = format_date($content->changed, "teaser");
+        $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
+    }
+
+    $query = db_select("flagging" , "flag");
+    $query->join("taxonomy_term_data" , "term" , "flag.entity_id = term.tid");
+    $query->leftJoin("field_data_field_image" , "field_image" , "term.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->fields("term" , array("tid" , "name"));
+    $query->addField("image" , "uri" , "picture");
+    $query->condition("flag.uid" , $uid);
+    $query->condition("flag.fid" , 2);
+    $query->condition("flag.entity_type" , "taxonomy_term");
+    $tags = $query->execute()->fetchAll();
+    foreach($tags as $tag) if(!empty($tag->picture)) $tag->picture = image_style_url("300x200" , $tag->picture);
+
+    return array("contents" => $contents , "tags" => $tags);
+}
+
+function user_resource_favorite_content($parameter , $uid){
+    $query = db_select("node" , "node");
+    $query->join("clapping" , "clap" , "clap.entity_id = node.nid and clap.entity_type = 'node' and clap.uid = ' " . $uid . " ' ");
+    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
+    $query->fields("node" , array("nid" , "title" , "created" , "changed"));
+    $query->addField("file" , "uri" , "picture");
+    $query->condition("node.status" , 1);
+    $contents = $query->execute()->fetchAll();
+
+    foreach($contents as $content){
+        $content->created = format_date($content->created, "teaser");
+        $content->changed = format_date($content->changed, "teaser");
+        $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
+    }
+
+    return $contents;
+}
+
+function user_resource_favorite_comments($parameter , $uid){
+    $query = db_select("comment" , "comment");
+    $query->join("clapping" , "clap" , "clap.entity_id = comment.cid and clap.entity_type = 'comment' and clap.uid = ' " . $uid . " ' ");
+    $query->leftJoin("field_data_comment_body" , "body" , "comment.cid = body.entity_id and body.entity_type = 'comment' ");
+    $query->fields("comment" , array("cid" , "nid" , "created" , "changed"));
+    $query->addField("body" , "comment_body_value" , "body");
+    $query->condition("comment.status" , 1);
+    $comments = $query->execute()->fetchAll();
+
+    foreach($comments as $comment){
+        $comment->created = format_date($comment->created, "teaser");
+        $comment->changed = format_date($comment->changed, "teaser");
+    }
+
+    return $comments;
 }
