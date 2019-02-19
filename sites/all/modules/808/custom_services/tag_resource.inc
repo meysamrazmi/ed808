@@ -16,11 +16,11 @@ function tag_resource_retrieve($tid , $parameter){
     if(!empty($tag->image)) $tag->image = generate_file_address($tag->image);
 
     global $user;
-    $bookmark = db_select("flagging")
+    $follow = db_select("flagging")
         ->fields("flagging" , array("flagging_id"))
         ->condition("entity_id" , $tid)->condition("entity_type" , "taxonomy_term")->condition("uid" , $user->uid)
         ->execute()->fetch();
-    $tag->user_bookmark = (!empty($bookmark))? true : false;
+    $tag->user_follow = (!empty($follow))? true : false;
 
     return $tag;
 }

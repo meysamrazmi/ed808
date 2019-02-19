@@ -261,6 +261,31 @@ function user_resource_exist($data){
     if(!empty($result)) return true;
     else return false;
 }
+
+function user_resource_insert_interests($data){
+    global $user;
+    if($user->uid == 0) return services_error("You should login first!" , 403);
+    $topics = $data["topics"];
+    foreach ($topics as $tid){
+        db_merge("user_temp_interests")->key(array(
+            "uid" => $user->uid,
+            "action" => "interest",
+            "entity_type" => "taxonomy_term",
+            "bundle" => "latin_content_topic",
+            "entity_id" => $tid,
+        ))->fields(array(
+            "uid" => $user->uid,
+            "action" => "interest",
+            "entity_type" => "taxonomy_term",
+            "bundle" => "latin_content_topic",
+            "entity_id" => $tid,
+            "value" => "1",
+            "date" => REQUEST_TIME
+        ))->execute();
+    }
+
+    return true;
+}
 /*---------------------relationships part------------------------------*/
 function user_resource_nav_bar_info($parameter , $login){
     global $user;

@@ -36,9 +36,9 @@ function flag_resource_content_bookmark($nid , $data){
     );
     return flag_function($parameter);
 }
-function flag_resource_tag_bookmark($tid , $data){
-    if($data["action"] === "bookmark") $action = 1;
-    elseif($data["action"] === "unbookmark") $action = 0;
+function flag_resource_tag_follow($tid , $data){
+    if($data["action"] === "follow") $action = 1;
+    elseif($data["action"] === "unfollow") $action = 0;
     else return services_error("Unknown Action!" , 406);
     $parameter = array(
         "entity_id" => $tid,

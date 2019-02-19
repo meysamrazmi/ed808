@@ -6,6 +6,10 @@ function contents_resource_index($parameter){
      * this part is for filters
      * search and filters on type, category, topic, tag
      */
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+    $sort_base = isset($parameter["sort"]) && !empty($parameter["sort"]) ? $parameter["sort"] : "newest";
+
     $custom_contents = array();
     $filter = false;
     if(isset($parameter["search"])){
@@ -47,8 +51,9 @@ function contents_resource_index($parameter){
         $custom_contents = (!$filter)? $results : array_intersect($custom_contents , $results);
         $filter = true;
     }
-    if($filter == true && empty($custom_contents)) return ["contents" => array() , "count" => 0];
+    if($filter == true && empty($custom_contents)) return ["contents" => array() , "count" => 0 , "page" => $page];
 
+    /*Get the Events nid*/
     $query = db_select("field_data_field_latin_contents_types" , "event");
     $query->fields("event" , array("entity_id"));
     $query->condition("event.entity_type" , "node");
@@ -65,11 +70,35 @@ function contents_resource_index($parameter){
     $query->addField("file" , "uri" , "picture");
     $query->condition("node.status" , 1);
     $query->condition("node.type" , "latin_contents");
-    if(!empty($events))$query->condition("node.nid" , $events , "NOT IN");
-    if($filter == true) $query->condition("node.nid" , $custom_contents, "IN");
-    $query->orderBy("node.nid" , "DESC");
+    if(!empty($events))$query->condition("node.nid" , $events , "NOT IN"); // except the events
+    if($filter == true) $query->condition("node.nid" , $custom_contents, "IN"); // filter the response
+
+    if(!empty($parameter["stick"]) && $parameter["stick"] == 1) $query->condition("node.sticky" , 1);
+    elseif(!empty($parameter["stick"]) && $parameter["stick"] == -1) $query->condition("node.sticky" , 0);
+
+    /*If this query is called form other places with custom nids, it is filtered appropriate based on custom node*/
+    if(isset($parameter["custom_contents"]) && !empty($parameter["custom_contents"])) $query->condition("node.nid" , $parameter["custom_contents"] , "IN");
+
+    switch ($sort_base){
+        case "newest" :
+            $query->orderBy("node.nid" , "DESC");
+            break;
+
+        case "first" :
+            $query->orderBy("node.nid" , "ASC");
+            break;
+
+        case "updated" :
+            $query->orderBy("node.changed" , "DESC");
+            break;
+        default :
+            $query->orderBy("node.nid" , "DESC");
+            break;
+    }
+
     $count = clone ($query);
-    $query->range((isset($parameter["page"]) ? $parameter["page"] : 0) * 30 , 30);
+    $query->range($page * $limits , $limits);
+
     $contents = $query->execute()->fetchAll();
     if(empty($contents)) return ["contents" => array() , "count" => 0];
 
@@ -117,9 +146,11 @@ function contents_resource_index($parameter){
 
     $contents = array_values($contents_r);
 
-    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => isset($parameter["page"]) ? $parameter["page"] : 0];
+    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 function contents_resource_retrieve($nid , $parameter){
+    global $user;
+
     /*fetch content data*/
     $query = db_select("node" , "node");
     $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
@@ -134,6 +165,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->leftJoin("field_data_field_ifwebinar" , "ifwebinar" , "node.nid = ifwebinar.entity_id");
     $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
     $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.bundle = 'latin_contents' ");
+    $query->leftJoin("clapping" , "user_clap" , "user_clap.entity_id = node.nid and user_clap.entity_type = 'node' and user_clap.uid = '" . $user->uid . "'");
     $query->fields("node" , array("nid" , "uid" , "title" , "created" , "changed"));
     $query->fields("body" , array("body_value"));
     $query->addField("image" , "uri" , "image");
@@ -146,6 +178,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("ifwebinar" , "field_ifwebinar_value" , "ifwebinar");
     $query->addField("808_suggestion" , "field_event_808_suggestion_value" , "808_suggestion");
     $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
+    $query->addField("user_clap" , "vote" , "user_clap");
     $query->condition("node.nid" , $nid);
     $query->condition("node.status" , 1);
 
@@ -175,6 +208,7 @@ function contents_resource_retrieve($nid , $parameter){
         $content->event_time = date("F j, Y" , $timestamp);
     }
     $content->clap_point = empty($content->clap_point) ? 0 : (int) $content->clap_point;
+    $content->user_clap = empty($content->user_clap) ? 0 : (int) $content->user_clap;
     $content->references =  array();
     $content->files =  array();
     $content->type =  array();
@@ -251,7 +285,6 @@ function contents_resource_retrieve($nid , $parameter){
 
     return ["content" => $content , "author" => $author];
 }
-
 function contents_resource_create($data){
     global $user;
     if(!$user->uid > 0) return services_error("You should login for this action!" , 403);
@@ -342,7 +375,10 @@ function search_content_by_value($value){
 }
 /*-------------------------------------------------------------------------------------*/
 /*-------------------------------------relationships-----------------------------------*/
-function contents_resource_filters($parameter  , $type){
+/**
+ * Returns the all required filters
+ */
+function contents_resource_filters($parameter  , $url){
     $type = array();
     $category = array();
     $topic = array();
@@ -369,6 +405,23 @@ function contents_resource_filters($parameter  , $type){
         array("name" => "topic", "children" => $topic)
     );
 }
+/**
+ * Returns the topics list
+ * It is used to be selected by user after registration in site
+ */
+function contents_resource_topics($parameters , $url){
+    $query = db_select("taxonomy_term_data" , "term_data");
+    $query->fields("term_data" , array("tid" , "name"));
+    $query->condition("term_data.vid" , 35);
+    $results = $query->execute()->fetchAll();
+
+    return $results;
+}
+/**
+ * It returns the Events
+ * if $url == list then it returns the upcoming list for home page
+ * if $url == all then it returns all of the events
+ */
 function content_resource_event_list($parameter , $url){
     /*if $url == list then return the upcoming events from today until the end*/
     if(strcmp($url , "list") == 0) {
@@ -450,6 +503,9 @@ function content_resource_event_list($parameter , $url){
         return $times;
     }
 }
+/**
+ * Returns the comments of a node
+ */
 function content_resource_comments($parameter , $nid){
     global $user;
 
@@ -525,6 +581,10 @@ function content_resource_comments($parameter , $nid){
 
     return $comments;
 }
+/**
+ * It finds the relative nodes for a node
+ * It is using  fetch_content_relatives() function
+ */
 function content_resource_relatives($parameter , $nid){
     $node = db_select("node" , "node")->fields("node" , array())->condition("nid" , $nid)->condition("status" , 1)->execute()->fetch();
     if(empty($node)) return services_error("This content is not found!" , 404);
@@ -693,5 +753,29 @@ function fetch_content_relatives($node_id , $refresh = false){
     }
 
     return $nids;
+}
+/**
+ * This function return the contents for homepage
+ * It responses based on user`s interests
+ */
+function content_resource_user_interest($parameter , $url){
+    global $user;
+    if($user->uid == 0) return array();
+
+    /*for now we just have user`s topic interests*/
+    $query = db_select("user_temp_interests" , "interests");
+    $query->join("field_data_field_latin_contents_topics" , "topic" , "interests.entity_id = topic.field_latin_contents_topics_tid and topic.entity_type = 'node' and topic.bundle = 'latin_contents' ");
+    $query->join("node" , "node" , "node.nid = topic.entity_id and node.status = '1' ");
+    $query->fields("node" , array("nid"));
+    $query->condition("interests.uid" , $user->uid);
+    $query->condition("interests.action" , "interest");
+    $query->condition("interests.entity_type" , "taxonomy_term");
+    $query->condition("interests.bundle" , "latin_content_topic");
+    $query->condition("interests.value" , "1");
+    $query->orderBy("node.nid" , "DESC");
+    $nids = $query->execute()->fetchCol();
+    if(empty($nids)) return $nids;
+    $parameter["custom_contents"] = $nids;
+    return contents_resource_index($parameter);
 }
 /*-------------------------------------------------------------------------------------*/

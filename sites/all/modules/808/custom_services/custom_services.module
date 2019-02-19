@@ -150,6 +150,23 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'interests' => array(
+                    'help' => 'insert the topics that user is interested in',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_insert_interests',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
+                    ),
+                )
             ),
             'relationships' => array(
                 'nav_bar_info' => array(
@@ -477,12 +494,38 @@ function custom_services_services_resources(){
                             'default' => array()
                         ),
                         array(
-                            'name' => 'type',
+                            'name' => 'url',
                             'type' => 'string',
                             'description' => 'Just use for url address.',
                             'source' => array('path' => 0),
                             'optional' => False,
                             'default' => "all"
+                        ),
+                    ),
+                ),
+                'topics' => array(
+                    'help' => 'return filters of a content type',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'contents_resource_topics',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'url',
+                            'type' => 'string',
+                            'description' => 'Just use for url address.',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                            'default' => "list"
                         ),
                     ),
                 ),
@@ -558,6 +601,32 @@ function custom_services_services_resources(){
                             'description' => 'nid for list of comments',
                             'source' => array('path' => 0),
                             'optional' => False,
+                        ),
+                    )
+                ),
+                'interest' => array(
+                    'help' => 'Return nodes that users are intrested in',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'content_resource_user_interest',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of api',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'url',
+                            'type' => 'string',
+                            'description' => 'url of the request',
+                            'source' => array('path' => 0),
+                            'optional' => True,
+                            'default' => 'user'
                         ),
                     )
                 ),
@@ -670,10 +739,10 @@ function custom_services_services_resources(){
                 )
             ),
             'targeted_actions' => array(
-                'bookmark' => array(
-                    'help' => 'bookmark or unbookmark a tag',
+                'follow' => array(
+                    'help' => 'follow or undollow a tag',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'flag_resource'),
-                    'callback' => 'flag_resource_tag_bookmark',
+                    'callback' => 'flag_resource_tag_follow',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,

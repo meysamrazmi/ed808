@@ -251,6 +251,66 @@ function custom_services_update_7106(){
     db_create_table('clapping', $schema['clapping']);
 }
 
+/**
+ * Create new database table {user_temp_interests}.
+ */
+function custom_services_update_7107(){
+    $schema['user_temp_interests'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => 'Primary Key - id',
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => t('User id'),
+            ),
+            'action' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The action that user has done',
+            ),
+            'entity_type' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => False,
+                'description' => 'The entity type',
+            ),
+            'bundle' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => False,
+                'description' => 'The bundle',
+            ),
+            'entity_id' => array(
+                'type' => 'int',
+                'not null' => False,
+                'unsigned' => TRUE,
+                'description' => 'The if of entity',
+            ),
+            'value' => array(
+                'type' => 'varchar',
+                'length' => 256,
+                'not null' => True,
+                'description' => 'The value of user`s action!',
+            ),
+            'date' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when an action has been happened.',
+            ),
+        ),
+
+        'primary key' => array('id'),
+    );
+    db_create_table('user_temp_interests', $schema['user_temp_interests']);
+}
+
 /*
  * Implementation of hook_install()
 */
