@@ -7,21 +7,28 @@ function custom_services_services_resources(){
 	return array(
 	    'page' => array(
 	        'operations' => array(
-	            'index' => array(
+	            'retrieve' => array(
                     'help' => 'Return a page data',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'page_resource'),
-                    'callback' => 'page_resource_index',
+                    'callback' => 'page_resource_retrieve',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
                     'args' => array(
                         array(
-                            'name' => 'args',
-                            'type' => 'string',
-                            'description' => 'Arguments of page',
-                            'source' => array('param' => 'args'),
+                            'name' => 'nid',
+                            'optional' => FALSE,
+                            'source' => array('path' => 0),
+                            'type' => 'int',
+                            'description' => 'The uid of the user',
+                        ),
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of page',
+                            'source' => array('param' => 'parameter'),
                             'optional' => True,
-                            'default' => 'home'
+                            'default' => array()
                         ),
                     )
                 )

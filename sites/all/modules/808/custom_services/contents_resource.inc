@@ -222,7 +222,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("file" , "uri" , "file");
     $query->condition("field_files.entity_id" , $content->nid);
     $results = $query->execute()->fetchAll();
-    foreach ($results as $result) array_push($content->files , $result->file);
+    foreach ($results as $result) array_push($content->files , generate_file_address($result->file));
 
     /*add references*/
     $query = db_select("field_data_field_latin_content_references" , "ref");
