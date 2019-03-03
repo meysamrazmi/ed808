@@ -313,13 +313,20 @@ function user_resource_nav_bar_info($parameter , $login){
 
 function user_resource_posts($parameter , $uid){
     global $user;
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
     $query = db_select("node" , "node");
     $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.bundle = 'latin_contents' ");
     $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
     $query->leftJoin("file_managed" , "pic" , "pic.fid = field_image.field_image_fid ");
+    $query->leftJoin("field_data_field_latin_contents_topics" , "topics" , "topics.entity_id = node.nid and topics.entity_type = 'node' and topics.bundle = 'latin_contents' and topics.delta = '0' ");
+    $query->leftJoin("taxonomy_term_data" , "term_data" , "term_data.tid = topics.field_latin_contents_topics_tid");
     $query->fields("node" , array("nid" , "title" , "created" , "changed" , "status"));
     $query->addField("body" , "body_value" , "body");
     $query->addField("pic" , "uri" , "picture");
+    $query->addField("term_data" , "tid" , "topic_tid");
+    $query->addField("term_data" , "name" , "topic_name");
     $query->condition("node.type" , "latin_contents");
     $query->condition("node.uid" , $uid);
     if($user->uid != $uid) $query->condition("node.status" , '1');
@@ -334,16 +341,17 @@ function user_resource_posts($parameter , $uid){
         }
     }
     $query->orderBy("node.nid" , "DESC");
-    $query->range((isset($parameter["page"]) ? $parameter["page"] : 0) * 30 , 30);
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
     $posts = $query->execute()->fetchAll();
 
     foreach ($posts as $post){
         $post->created = format_date($post->created, "teaser");
         $post->changed = format_date($post->changed, "teaser");
-        $post->picture = (!empty($post->picture)) ? image_style_url("300x200" , $post->picture) : "";
+        $post->picture = (!empty($post->picture)) ? generate_file_address($post->picture) : null;
     }
 
-    return $posts;
+    return ["posts" => $posts , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 
 function user_resource_following($parameter , $uid){

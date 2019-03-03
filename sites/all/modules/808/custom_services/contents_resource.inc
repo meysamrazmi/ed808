@@ -10,6 +10,9 @@ function contents_resource_index($parameter){
     $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
     $sort_base = isset($parameter["sort"]) && !empty($parameter["sort"]) ? $parameter["sort"] : "newest";
 
+    /* this part is used for filtering
+     * collect custom nids in $custom_contents
+     * */
     $custom_contents = array();
     $filter = false;
     if(isset($parameter["search"])){
@@ -64,10 +67,16 @@ function contents_resource_index($parameter){
 
     /*fetch content list data*/
     $query = db_select("node" , "node");
+    $query->leftJoin("field_data_body" , "body" , "node.nid = body.entity_id and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
     $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
     $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
+    $query->join("users" , "user" , "user.uid = node.uid");
+    $query->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
     $query->fields("node" , array("nid" , "title" , "uid" , "created" , "changed"));
+    $query->addField("body" , "body_value" , "body");
     $query->addField("file" , "uri" , "picture");
+    $query->addField("user" , "name" , "author_name");
+    $query->addField("user_pic" , "uri" , "author_pic");
     $query->condition("node.status" , 1);
     $query->condition("node.type" , "latin_contents");
     if(!empty($events))$query->condition("node.nid" , $events , "NOT IN"); // except the events
@@ -104,10 +113,16 @@ function contents_resource_index($parameter){
 
     $nids = array();
     $contents_r = array();
+    /*post process on contents*/
     foreach ($contents as $content){
+        $content->created_timestamp = $content->created;
         $content->created = format_date($content->created, "teaser");
+
+        $content->changed_timestamp = $content->changed;
         $content->changed = format_date($content->changed, "teaser");
-        $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
+
+        $content->picture = !empty($content->picture) ? image_style_url("300x200" , $content->picture) : null;
+        $content->author_pic = !empty($content->author_pic) ? image_style_url("60x60" , $content->author_pic) : null;
 
         array_push($nids , $content->nid);
         $content->types = array();
@@ -150,6 +165,7 @@ function contents_resource_index($parameter){
 }
 function contents_resource_retrieve($nid , $parameter){
     global $user;
+    $author = db_select("node")->fields("node" , array("uid"))->condition("node.nid" , $nid)->execute()->fetch();
 
     /*fetch content data*/
     $query = db_select("node" , "node");
@@ -166,7 +182,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
     $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.bundle = 'latin_contents' ");
     $query->leftJoin("clapping" , "user_clap" , "user_clap.entity_id = node.nid and user_clap.entity_type = 'node' and user_clap.uid = '" . $user->uid . "'");
-    $query->fields("node" , array("nid" , "uid" , "title" , "created" , "changed"));
+    $query->fields("node" , array("nid" , "uid" , "title" , "status" , "created" , "changed"));
     $query->fields("body" , array("body_value"));
     $query->addField("image" , "uri" , "image");
     $query->addField("field_link" , "field_link_url" , "video_link");
@@ -180,7 +196,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
     $query->addField("user_clap" , "vote" , "user_clap");
     $query->condition("node.nid" , $nid);
-    $query->condition("node.status" , 1);
+    if($user->uid != $author->uid) $query->condition("node.status" , 1);
 
     /*subquery calculate the sum of the claps for this content*/
     $subquery = db_select("clapping" , "clap");
@@ -301,11 +317,12 @@ function contents_resource_create($data){
     $node->body['und'][0]['value'] = $data['body'];
     $node->body['und'][0]['summary'] = '';
     $node->body['und'][0]['format'] = 'full_html';
-    $node->field_image  = !empty($data['field_image']) ? $data["field_image"] : array();
+    if(isset($data['field_image']) && !empty($data['field_image'])) $node->field_image  = $data['field_image'];
     node_save($node);
 
     module_invoke_all('field_storage_pre_update' , "node" , $node);
 
+    $node = contents_resource_retrieve($node->nid , array());
     return $node;
 }
 function contents_resource_update($nid , $data){
