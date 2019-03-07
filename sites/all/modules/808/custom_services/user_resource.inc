@@ -170,7 +170,7 @@ function login($data){
     $db_or->condition('user.mail', $data["username_email"] , 'LIKE');
     $query->condition($db_or);
     $result = $query->execute()->fetchObject();
-    if(empty($result))return services_error(t("User is not exist!") , 404);
+    if(empty($result))return services_error(t("User is not found with this credential!") , 404);
     elseif($result->status == 0)return services_error(t("User is inactive!") , 403);
     else $username = $result->name;
 
@@ -193,7 +193,7 @@ function login($data){
             return $login_data;
         }
     }
-    return services_error(t('Wrong username or password!') , 16);
+    return services_error(t('Wrong username or password!') , 401);
 }
 
 function user_resource_register($data){
@@ -355,6 +355,9 @@ function user_resource_posts($parameter , $uid){
 }
 
 function user_resource_following($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
     /*fetch the data of the user following*/
     $query = db_select("flagging" , "flag");
     $query->join("users" , "user" , "flag.entity_id = user.uid");
@@ -384,6 +387,9 @@ function user_resource_following($parameter , $uid){
             break;
     }
 
+    $query->range($page * $limits , $limits);
+
+    $count = clone ($query);
     $following = $query->execute()->fetchAll();
 
     /*post process on followings*/
@@ -393,10 +399,51 @@ function user_resource_following($parameter , $uid){
         if(!empty($value->picture)) $value->picture = image_style_url("200x200" , $value->picture);
     }
 
-    return $following;
+    return ["following" => $following , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
+}
+
+function user_resource_following_tags($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
+    $query = db_select("flagging" , "flag");
+    $query->join("taxonomy_term_data" , "term" , "flag.entity_id = term.tid");
+    $query->leftJoin("field_data_field_image" , "field_image" , "term.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->fields("term" , array("tid" , "name"));
+    $query->addField("image" , "uri" , "picture");
+    $query->condition("flag.uid" , $uid);
+    $query->condition("flag.fid" , 2);
+    $query->condition("flag.entity_type" , "taxonomy_term");
+
+    /*sort base on time or name*/
+    $sort_base = empty($parameter["sort"]) ? "time" : $parameter["sort"];
+    if(!empty($parameter["sort_dir"]) && ($parameter["sort_dir"] === "ASC" || $parameter["sort_dir"] === "DESC")) $sort_dir = $parameter["sort_dir"];
+    else $sort_dir = "DESC";
+    switch ($sort_base){
+        case "time" :
+            $query->orderBy("flag.timestamp" , $sort_dir);
+            break;
+        case "name" :
+            $query->orderBy("term.name" , $sort_dir);
+            break;
+        default:
+            $query->orderBy("flagging.timestamp" , "DESC");
+            break;
+    }
+
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
+    $tags = $query->execute()->fetchAll();
+    foreach($tags as $tag) if(!empty($tag->picture)) $tag->picture = image_style_url("60x60" , $tag->picture);
+
+    return ["following" => $tags , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 
 function user_resource_follower($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
     /*fetch the data of the user following*/
     $query = db_select("flagging" , "flag");
     $query->join("users" , "user" , "flag.uid = user.uid");
@@ -426,6 +473,8 @@ function user_resource_follower($parameter , $uid){
             break;
     }
 
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
     $follower = $query->execute()->fetchAll();
 
     /*post process on followings*/
@@ -435,10 +484,13 @@ function user_resource_follower($parameter , $uid){
         if(!empty($value->picture)) $value->picture = image_style_url("200x200" , $value->picture);
     }
 
-    return $follower;
+    return ["follower" => $follower , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 
 function user_resource_bookmarks($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
     $query = db_select("flagging" , "flag");
     $query->join("node" , "node" , "flag.entity_id = node.nid and node.status = '1' ");
     $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
@@ -448,6 +500,9 @@ function user_resource_bookmarks($parameter , $uid){
     $query->condition("flag.uid" , $uid);
     $query->condition("flag.fid" , 1);
     $query->condition("flag.entity_type" , "node");
+
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
     $contents = $query->execute()->fetchAll();
 
     foreach($contents as $content){
@@ -456,22 +511,13 @@ function user_resource_bookmarks($parameter , $uid){
         $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
     }
 
-    $query = db_select("flagging" , "flag");
-    $query->join("taxonomy_term_data" , "term" , "flag.entity_id = term.tid");
-    $query->leftJoin("field_data_field_image" , "field_image" , "term.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
-    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
-    $query->fields("term" , array("tid" , "name"));
-    $query->addField("image" , "uri" , "picture");
-    $query->condition("flag.uid" , $uid);
-    $query->condition("flag.fid" , 2);
-    $query->condition("flag.entity_type" , "taxonomy_term");
-    $tags = $query->execute()->fetchAll();
-    foreach($tags as $tag) if(!empty($tag->picture)) $tag->picture = image_style_url("300x200" , $tag->picture);
-
-    return array("contents" => $contents , "tags" => $tags);
+    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 
 function user_resource_favorite_content($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
     $query = db_select("node" , "node");
     $query->join("clapping" , "clap" , "clap.entity_id = node.nid and clap.entity_type = 'node' and clap.uid = ' " . $uid . " ' ");
     $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
@@ -479,6 +525,9 @@ function user_resource_favorite_content($parameter , $uid){
     $query->fields("node" , array("nid" , "title" , "created" , "changed"));
     $query->addField("file" , "uri" , "picture");
     $query->condition("node.status" , 1);
+
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
     $contents = $query->execute()->fetchAll();
 
     foreach($contents as $content){
@@ -487,16 +536,22 @@ function user_resource_favorite_content($parameter , $uid){
         $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
     }
 
-    return $contents;
+    return ["contents" => $contents , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 
 function user_resource_favorite_comments($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
     $query = db_select("comment" , "comment");
     $query->join("clapping" , "clap" , "clap.entity_id = comment.cid and clap.entity_type = 'comment' and clap.uid = ' " . $uid . " ' ");
     $query->leftJoin("field_data_comment_body" , "body" , "comment.cid = body.entity_id and body.entity_type = 'comment' ");
     $query->fields("comment" , array("cid" , "nid" , "created" , "changed"));
     $query->addField("body" , "comment_body_value" , "body");
     $query->condition("comment.status" , 1);
+
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
     $comments = $query->execute()->fetchAll();
 
     foreach($comments as $comment){
@@ -504,5 +559,28 @@ function user_resource_favorite_comments($parameter , $uid){
         $comment->changed = format_date($comment->changed, "teaser");
     }
 
-    return $comments;
+    return ["comments" => $comments , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
+
+function user_resource_wrote_comments($parameter , $uid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
+    $query = db_select("comment" , "comment");
+    $query->leftJoin("field_data_comment_body" , "body" , "comment.cid = body.entity_id and body.entity_type = 'comment' ");
+    $query->fields("comment" , array("cid" , "nid" , "created" , "changed"));
+    $query->addField("body" , "comment_body_value" , "body");
+    $query->condition("comment.uid" , $uid);
+
+    $count = clone ($query);
+    $query->range($page * $limits , $limits);
+    $comments = $query->execute()->fetchAll();
+
+    foreach($comments as $comment){
+        $comment->created = format_date($comment->created, "teaser");
+        $comment->changed = format_date($comment->changed, "teaser");
+    }
+
+    return ["comments" => $comments , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
+}
+

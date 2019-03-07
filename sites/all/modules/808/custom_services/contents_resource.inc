@@ -290,6 +290,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("file_managed" , "uri" , "picture");
     $query->condition("user.uid" , $content->uid);
     $author = $query->execute()->fetch();
+    if(!empty($author->picture)) $author->picture = image_style_url("60x60" , $author->picture);
 
     /*check user if user bookmark this content or not*/
     global $user;
@@ -428,9 +429,16 @@ function contents_resource_filters($parameter  , $url){
  */
 function contents_resource_topics($parameters , $url){
     $query = db_select("taxonomy_term_data" , "term_data");
+    $query->leftJoin("field_data_field_image" , " field_image" , "term_data.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
     $query->fields("term_data" , array("tid" , "name"));
+    $query->addField("image" , "uri" , "picture");
     $query->condition("term_data.vid" , 35);
     $results = $query->execute()->fetchAll();
+
+    foreach ($results as $result){
+        if(!empty($result->picture)) $result->picture = image_style_url("300x300" , $result->picture);
+    }
 
     return $results;
 }
