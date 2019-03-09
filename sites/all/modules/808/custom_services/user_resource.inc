@@ -31,8 +31,8 @@ function user_resource_retrieve($uid , $parameter){
     $query->condition('user.uid' , $uid);
     $account = $query->execute()->fetch();
     if(empty($account)) return services_error("User is not exist!" , 404);
-    $account->created = format_date($account->created);
-    $account->login = format_date($account->login);
+    $account->created = date("F j, Y" , $account->created);
+    $account->login = date("F j, Y" , $account->login);
 
     $account->roles = array();
     $query = db_select('users_roles' , 'user_role');
@@ -346,8 +346,8 @@ function user_resource_posts($parameter , $uid){
     $posts = $query->execute()->fetchAll();
 
     foreach ($posts as $post){
-        $post->created = format_date($post->created, "teaser");
-        $post->changed = format_date($post->changed, "teaser");
+        $post->created = date("F j, Y" , $post->created);
+        $post->changed = date("F j, Y" , $post->changed);
         $post->picture = (!empty($post->picture)) ? generate_file_address($post->picture) : null;
     }
 
@@ -506,8 +506,8 @@ function user_resource_bookmarks($parameter , $uid){
     $contents = $query->execute()->fetchAll();
 
     foreach($contents as $content){
-        $content->created = format_date($content->created, "teaser");
-        $content->changed = format_date($content->changed, "teaser");
+        $content->created = date("F j, Y" , $content->created);
+        $content->changed = date("F j, Y" , $content->changed);
         $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
     }
 
@@ -531,8 +531,8 @@ function user_resource_favorite_content($parameter , $uid){
     $contents = $query->execute()->fetchAll();
 
     foreach($contents as $content){
-        $content->created = format_date($content->created, "teaser");
-        $content->changed = format_date($content->changed, "teaser");
+        $content->created = date("F j, Y" , $content->created);
+        $content->changed = date("F j, Y" , $content->changed);
         $content->picture = (!empty($content->picture)) ? image_style_url("300x200" , $content->picture) : "";
     }
 
@@ -555,8 +555,8 @@ function user_resource_favorite_comments($parameter , $uid){
     $comments = $query->execute()->fetchAll();
 
     foreach($comments as $comment){
-        $comment->created = format_date($comment->created, "teaser");
-        $comment->changed = format_date($comment->changed, "teaser");
+        $comment->created = date("F j, Y" , $comment->created);
+        $comment->changed = date("F j, Y" , $comment->changed);
     }
 
     return ["comments" => $comments , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
@@ -568,7 +568,9 @@ function user_resource_wrote_comments($parameter , $uid){
 
     $query = db_select("comment" , "comment");
     $query->leftJoin("field_data_comment_body" , "body" , "comment.cid = body.entity_id and body.entity_type = 'comment' ");
+    $query->join("node" , "node" , "node.nid = comment.cid and node.status = '1' ");
     $query->fields("comment" , array("cid" , "nid" , "created" , "changed"));
+    $query->fields("node" , array("title"));
     $query->addField("body" , "comment_body_value" , "body");
     $query->condition("comment.uid" , $uid);
 
@@ -577,8 +579,8 @@ function user_resource_wrote_comments($parameter , $uid){
     $comments = $query->execute()->fetchAll();
 
     foreach($comments as $comment){
-        $comment->created = format_date($comment->created, "teaser");
-        $comment->changed = format_date($comment->changed, "teaser");
+        $comment->created = date("F j, Y" , $comment->created);
+        $comment->changed = date("F j, Y" , $comment->changed);
     }
 
     return ["comments" => $comments , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];

@@ -64,30 +64,43 @@ function contents_resource_index($parameter){
     $query->condition("event.field_latin_contents_types_tid" , 4058);
     $events = $query->execute()->fetchCol();
 
-
     /*fetch content list data*/
     $query = db_select("node" , "node");
-    $query->leftJoin("field_data_body" , "body" , "node.nid = body.entity_id and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
-    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
-    $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
-    $query->join("users" , "user" , "user.uid = node.uid");
-    $query->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
     $query->fields("node" , array("nid" , "title" , "uid" , "created" , "changed"));
-    $query->addField("body" , "body_value" , "body");
-    $query->addField("file" , "uri" , "picture");
-    $query->addField("user" , "name" , "author_name");
-    $query->addField("user_pic" , "uri" , "author_pic");
     $query->condition("node.status" , 1);
     $query->condition("node.type" , "latin_contents");
-    if(!empty($events))$query->condition("node.nid" , $events , "NOT IN"); // except the events
-    if($filter == true) $query->condition("node.nid" , $custom_contents, "IN"); // filter the response
 
+    /*add body*/
+    $query->leftJoin("field_data_body" , "body" , "node.nid = body.entity_id and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
+    $query->addField("body" , "body_value" , "body");
+
+    /*add first picture*/
+    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
+    $query->addField("file" , "uri" , "picture");
+
+    /*add author username*/
+    $query->join("users" , "user" , "user.uid = node.uid");
+    $query->addField("user" , "name" , "author_name");
+
+    /*add author pic*/
+    $query->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
+    $query->addField("user_pic" , "uri" , "author_pic");
+
+    /*except the events*/
+    if(!empty($events))$query->condition("node.nid" , $events , "NOT IN");
+
+    /*filter the response*/
+    if($filter == true) $query->condition("node.nid" , $custom_contents, "IN");
+
+    /*choose stick or none stick if $parameter[stick] is set*/
     if(!empty($parameter["stick"]) && $parameter["stick"] == 1) $query->condition("node.sticky" , 1);
     elseif(!empty($parameter["stick"]) && $parameter["stick"] == -1) $query->condition("node.sticky" , 0);
 
     /*If this query is called form other places with custom nids, it is filtered appropriate based on custom node*/
     if(isset($parameter["custom_contents"]) && !empty($parameter["custom_contents"])) $query->condition("node.nid" , $parameter["custom_contents"] , "IN");
 
+    /*sort the response*/
     switch ($sort_base){
         case "newest" :
             $query->orderBy("node.nid" , "DESC");
@@ -105,7 +118,10 @@ function contents_resource_index($parameter){
             break;
     }
 
+    /*calculating the counts of response*/
     $count = clone ($query);
+
+    /*filter to limited data*/
     $query->range($page * $limits , $limits);
 
     $contents = $query->execute()->fetchAll();
@@ -116,10 +132,10 @@ function contents_resource_index($parameter){
     /*post process on contents*/
     foreach ($contents as $content){
         $content->created_timestamp = $content->created;
-        $content->created = format_date($content->created, "teaser");
+        $content->created = date("F j, Y" , $content->created);
 
         $content->changed_timestamp = $content->changed;
-        $content->changed = format_date($content->changed, "teaser");
+        $content->changed = date("F j, Y" , $content->changed);
 
         $content->picture = !empty($content->picture) ? image_style_url("300x200" , $content->picture) : null;
         $content->author_pic = !empty($content->author_pic) ? image_style_url("60x60" , $content->author_pic) : null;
@@ -169,34 +185,58 @@ function contents_resource_retrieve($nid , $parameter){
 
     /*fetch content data*/
     $query = db_select("node" , "node");
-    $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
-    $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.entity_type = 'node' and field_image.delta = '0' ");
-    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
-    $query->leftJoin("field_data_field_link" , "field_link" , "field_link.entity_id = node.nid");
-    $query->leftJoin("field_data_field_eventtime" , "eventtime" , "node.nid = eventtime.entity_id");
-    $query->leftJoin("field_data_field_event_time_and_duration" , "time_and_duration" , "node.nid = time_and_duration.entity_id");
-    $query->leftJoin("field_data_field_event_place" , "event_place" , "node.nid = event_place.entity_id");
-    $query->leftJoin("field_data_field_company" , "company" , "node.nid = company.entity_id");
-    $query->leftJoin("field_data_field_event_registration_link" , "registration_link" , "node.nid = registration_link.entity_id");
-    $query->leftJoin("field_data_field_ifwebinar" , "ifwebinar" , "node.nid = ifwebinar.entity_id");
-    $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
-    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.bundle = 'latin_contents' ");
-    $query->leftJoin("clapping" , "user_clap" , "user_clap.entity_id = node.nid and user_clap.entity_type = 'node' and user_clap.uid = '" . $user->uid . "'");
     $query->fields("node" , array("nid" , "uid" , "title" , "status" , "created" , "changed"));
-    $query->fields("body" , array("body_value"));
-    $query->addField("image" , "uri" , "image");
-    $query->addField("field_link" , "field_link_url" , "video_link");
-    $query->addField("eventtime" , "field_eventtime_value" , "event_time");
-    $query->addField("time_and_duration" , "field_event_time_and_duration_value" , "time_and_duration");
-    $query->addField("event_place" , "field_event_place_value" , "event_place");
-    $query->addField("company" , "field_company_value" , "company");
-    $query->addField("registration_link" , "field_event_registration_link_url" , "registration_link");
-    $query->addField("ifwebinar" , "field_ifwebinar_value" , "ifwebinar");
-    $query->addField("808_suggestion" , "field_event_808_suggestion_value" , "808_suggestion");
-    $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
-    $query->addField("user_clap" , "vote" , "user_clap");
     $query->condition("node.nid" , $nid);
     if($user->uid != $author->uid) $query->condition("node.status" , 1);
+
+    /*add body*/
+    $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
+    $query->fields("body" , array("body_value"));
+
+    /*add first image*/
+    $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.entity_type = 'node' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->addField("image" , "uri" , "image");
+
+    /*add video link*/
+    $query->leftJoin("field_data_field_link" , "field_link" , "field_link.entity_id = node.nid");
+    $query->addField("field_link" , "field_link_url" , "video_link");
+
+    /*add event time*/
+    $query->leftJoin("field_data_field_eventtime" , "eventtime" , "node.nid = eventtime.entity_id");
+    $query->addField("eventtime" , "field_eventtime_value" , "event_time");
+
+    /*add time and duration*/
+    $query->leftJoin("field_data_field_event_time_and_duration" , "time_and_duration" , "node.nid = time_and_duration.entity_id");
+    $query->addField("time_and_duration" , "field_event_time_and_duration_value" , "time_and_duration");
+
+    /*add event place*/
+    $query->leftJoin("field_data_field_event_place" , "event_place" , "node.nid = event_place.entity_id");
+    $query->addField("event_place" , "field_event_place_value" , "event_place");
+
+    /*add company*/
+    $query->leftJoin("field_data_field_company" , "company" , "node.nid = company.entity_id");
+    $query->addField("company" , "field_company_value" , "company");
+
+    /*add registration link*/
+    $query->leftJoin("field_data_field_event_registration_link" , "registration_link" , "node.nid = registration_link.entity_id");
+    $query->addField("registration_link" , "field_event_registration_link_url" , "registration_link");
+
+    /*add if webinar*/
+    $query->leftJoin("field_data_field_ifwebinar" , "ifwebinar" , "node.nid = ifwebinar.entity_id");
+    $query->addField("ifwebinar" , "field_ifwebinar_value" , "ifwebinar");
+
+    /*add 808 suggestion*/
+    $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
+    $query->addField("808_suggestion" , "field_event_808_suggestion_value" , "808_suggestion");
+
+    /*add meta description*/
+    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.bundle = 'latin_contents' ");
+    $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
+
+    /*add if user clap this node or not*/
+    $query->leftJoin("clapping" , "user_clap" , "user_clap.entity_id = node.nid and user_clap.entity_type = 'node' and user_clap.uid = '" . $user->uid . "'");
+    $query->addField("user_clap" , "vote" , "user_clap");
 
     /*subquery calculate the sum of the claps for this content*/
     $subquery = db_select("clapping" , "clap");
@@ -213,8 +253,8 @@ function contents_resource_retrieve($nid , $parameter){
     if(empty($content)) return services_error("This content is not found!" , 404);
 
     /*post process, changes time format and add other information*/
-    $content->created = format_date($content->created);
-    $content->changed = format_date($content->changed);
+    $content->created = date("F j, Y" , $content->created);
+    $content->changed = date("F j, Y" , $content->changed);
     if(!empty($content->image)) $content->image = generate_file_address($content->image);
     if(isset($content->event_time)){
         $time = explode(" " , $content->event_time);
@@ -423,6 +463,7 @@ function contents_resource_filters($parameter  , $url){
         array("name" => "topic", "children" => $topic)
     );
 }
+
 /**
  * Returns the topics list
  * It is used to be selected by user after registration in site
@@ -442,6 +483,7 @@ function contents_resource_topics($parameters , $url){
 
     return $results;
 }
+
 /**
  * It returns the Events
  * if $url == list then it returns the upcoming list for home page
@@ -528,6 +570,7 @@ function content_resource_event_list($parameter , $url){
         return $times;
     }
 }
+
 /**
  * Returns the comments of a node
  */
@@ -587,8 +630,8 @@ function content_resource_comments($parameter , $nid){
         $comment->replies = array();
         $comment->user_like = empty($comment->user_like) ? false : true;
         $comment->likes = empty($comment->likes) ? 0 : (int) $comment->likes;
-        $comment->created = format_date($comment->created);
-        $comment->changed = format_date($comment->changed);
+        $comment->created = date("F j, Y" , $comment->created);
+        $comment->changed = date("F j, Y" , $comment->changed);
         if(!empty($comment->author_pic)) $comment->author_pic = image_style_url("200x200", $comment->author_pic);
         $associate_comments[$comment->cid] = $comment;
     }
@@ -596,8 +639,8 @@ function content_resource_comments($parameter , $nid){
         if(isset($associate_comments[$child->pid])) {
             $child->user_like = empty($child->user_like) ? false : true;
             $child->likes = empty($child->likes) ? 0 : (int) $child->likes;
-            $child->created = format_date($child->created);
-            $child->changed = format_date($child->changed);
+            $child->created = date("F j, Y" , $child->created);
+            $child->changed = date("F j, Y" , $child->changed);
             if(!empty($child->author_pic)) $child->author_pic = image_style_url("200x200", $child->author_pic);
             array_push($associate_comments[$child->pid]->replies, $child);
         }
@@ -606,6 +649,7 @@ function content_resource_comments($parameter , $nid){
 
     return $comments;
 }
+
 /**
  * It finds the relative nodes for a node
  * It is using  fetch_content_relatives() function
@@ -644,8 +688,8 @@ function content_resource_relatives($parameter , $nid){
      */
     $sorted = array();
     foreach ($relatives as $relative){
-        $relative->created = format_date($relative->created, "teaser");
-        $relative->changed = format_date($relative->changed, "teaser");
+        $relative->created = date("F j, Y" , $relative->created);
+        $relative->changed = date("F j, Y" , $relative->changed);
         $relative->picture = (!empty($relative->picture)) ? image_style_url("300x200" , $relative->picture) : "";
         $relative->types = array();
         $sorted[$relative->nid] = $relative;
@@ -660,6 +704,7 @@ function content_resource_relatives($parameter , $nid){
 
     return $relatives;
 }
+
 /**
  * find the most relative nodes for the $node_id based on the priority
  * node_topics has 4, node_categories has 3, node_tag has 2, node_types has 1
@@ -779,6 +824,7 @@ function fetch_content_relatives($node_id , $refresh = false){
 
     return $nids;
 }
+
 /**
  * This function return the contents for homepage
  * It responses based on user`s interests
