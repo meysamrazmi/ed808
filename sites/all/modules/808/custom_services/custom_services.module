@@ -1,8 +1,8 @@
 <?php
+
 /**
  * Implements hook_services_resources().
  */
-
 function custom_services_services_resources(){
 	return array(
 	    'page' => array(
@@ -980,6 +980,61 @@ function custom_services_services_resources(){
                     ),
                 )
             )
+        ),
+        'linkedin' => array(
+            'actions' => array(
+                'login' => array(
+                    'help' => 'Login a user with linkedin',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'linkedin_resource'),
+                    'callback' => 'linkedin_resource_login',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The data of request.',
+                            'source' => 'data',
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+                'register' => array(
+                    'help' => 'Register a user with linkedin',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'linkedin_resource'),
+                    'callback' => 'linkedin_resource_register',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'The hash of url.',
+                            'source' => 'data',
+                            'optional' => False,
+                        ),
+                    ),
+                ),
+                'connect' => array(
+                    'help' => 'Connect a user to linkedin',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'linkedin_resource'),
+                    'callback' => 'linkedin_resource_connect',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'Data of request.',
+                            'source' => "data",
+                            'optional' => False,
+                        ),
+                    ),
+                )
+            ),
         )
 	);
 }
