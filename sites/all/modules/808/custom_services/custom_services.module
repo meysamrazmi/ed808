@@ -1119,3 +1119,17 @@ function reCaptcha($key){
     }
     return FALSE;
 }
+function is_flagged($viewer_uid , $object_id , $entity){
+    if($viewer_uid == 0) return false;
+
+    $query = db_select("flagging" , "flagging");
+    $query->fields("flagging" , array("flagging_id"));
+    $query->condition("flagging.uid" , $viewer_uid);
+    $query->condition("flagging.entity_type" , $entity);
+    $query->condition("flagging.entity_id" , $object_id);
+    $follow = $query->execute()->fetch();
+
+    if(empty($follow)) return false;
+
+    return true;
+}

@@ -319,6 +319,7 @@ function contents_resource_retrieve($nid , $parameter){
     $results = $query->execute()->fetchAll();
     foreach ($results as $result) array_push($content->tags , array("tid" => $result->tid , "name" => $result->name));
 
+    global $user;
     /*about author*/
     $query = db_select("users" , "user");
     $query->leftJoin("field_data_field_full_name" , "name" , "user.uid = name.entity_id");
@@ -331,14 +332,10 @@ function contents_resource_retrieve($nid , $parameter){
     $query->condition("user.uid" , $content->uid);
     $author = $query->execute()->fetch();
     if(!empty($author->picture)) $author->picture = image_style_url("60x60" , $author->picture);
+    $author->user_follow = is_flagged($user->uid , $author->uid , "user");
 
     /*check user if user bookmark this content or not*/
-    global $user;
-    $bookmark = db_select("flagging")
-            ->fields("flagging" , array("flagging_id"))
-            ->condition("entity_id" , $nid)->condition("entity_type" , "node")->condition("uid" , $user->uid)
-            ->execute()->fetch();
-    $content->user_bookmark = (!empty($bookmark))? true : false;
+    $content->user_bookmark = is_flagged($user->uid , $content->nid , "node");
 
     return ["content" => $content , "author" => $author];
 }
@@ -386,6 +383,7 @@ function contents_resource_update($nid , $data){
         $node->body['und'][0]['value'] = $data['body'];
         $update = true;
     }
+    if(isset($data['field_image']) && !empty($data['field_image'])) $node->field_image  = $data['field_image'];
 
     if($update) {
         node_save($node);

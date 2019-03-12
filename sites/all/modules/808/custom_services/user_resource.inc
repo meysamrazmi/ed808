@@ -2,35 +2,49 @@
 /*---------------------operations part--------------------------------*/
 function user_resource_retrieve($uid , $parameter){
     $query = db_select('users' , 'user');
+    $query->fields('user' , array('uid' , 'name' , 'mail' , 'created' , 'login'));
+    $query->condition('user.uid' , $uid);
+
     $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
+    $query->addField("picture" , "uri" , "picture");
+
     $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' ");
     $query->leftJoin("file_managed" , "background_image" , "background_image.fid = field_image.field_image_fid");
+    $query->addField("background_image" , "uri" , "background_image");
+
     $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id");
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+
     $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->addField("about_me" , "field_about_me_value" , "about");
+
     $query->leftJoin("field_data_field_university" , "university" , "user.uid = university.entity_id");
+    $query->addField("university" , "field_university_value" , "university");
+
     $query->leftJoin("field_data_field_education_field" , "education_field" , "user.uid = education_field.entity_id");
+    $query->addField("education_field" , "field_education_field_value" , "education_field");
+
     $query->leftJoin("field_data_field_education_degree" , "education_degree" , "user.uid = education_degree.entity_id");
+    $query->addField("education_degree" , "field_education_degree_value" , "education_degree");
+
     $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
+    $query->addField("job" , "field_job_value" , "job");
+
     $query->leftJoin("field_data_field_skills" , "skills" , "user.uid = skills.entity_id");
+    $query->addField("skills" , "field_skills_value" , "skills");
+
     $query->leftJoin("field_data_field_mobile" , "mobile" , "user.uid = mobile.entity_id");
+    $query->addField("mobile" , "field_mobile_value" , "mobile");
+
     $query->leftJoin("field_data_field_files" , "field_files" , "user.uid = field_files.entity_id and field_files.entity_type = 'user' ");
     $query->leftJoin("file_managed" , "cv" , "cv.fid = field_files.field_files_fid");
-    $query->fields('user' , array('uid' , 'name' , 'mail' , 'created' , 'login'));
-    $query->addField("picture" , "uri" , "picture");
-    $query->addField("background_image" , "uri" , "background_image");
-    $query->addField("full_name" , "field_full_name_value" , "full_name");
-    $query->addField("about_me" , "field_about_me_value" , "about");
-    $query->addField("university" , "field_university_value" , "university");
-    $query->addField("education_field" , "field_education_field_value" , "education_field");
-    $query->addField("education_degree" , "field_education_degree_value" , "education_degree");
-    $query->addField("job" , "field_job_value" , "job");
-    $query->addField("skills" , "field_skills_value" , "skills");
-    $query->addField("mobile" , "field_mobile_value" , "mobile");
     $query->addField("cv" , "uri" , "cv");
     $query->addField("cv" , "origname" , "cvName");
-    $query->condition('user.uid' , $uid);
+
     $account = $query->execute()->fetch();
+
     if(empty($account)) return services_error("User is not exist!" , 404);
+
     $account->created = date("F j, Y" , $account->created);
     $account->login = date("F j, Y" , $account->login);
 
@@ -44,8 +58,10 @@ function user_resource_retrieve($uid , $parameter){
 
     if(!empty($account->picture)) $account->picture =  image_style_url("200x200", $account->picture);
     else unset($account->picture);
+
     if(!empty($account->background_image)) $account->background_image = image_style_url("1360x500_blur", $account->background_image);
     else unset($account->background_image);
+
     if(!empty($account->cv)) $account->cv = generate_file_address($account->cv);
     else {
         unset($account->cv_url);
@@ -57,6 +73,7 @@ function user_resource_retrieve($uid , $parameter){
         unset($account->mail);
         unset($account->mobile);
         unset($account->login);
+        $account->user_follow = is_flagged($user->uid , $uid , "user");
     }
 
     return $account;
