@@ -334,16 +334,22 @@ function user_resource_posts($parameter , $uid){
     $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
 
     $query = db_select("node" , "node");
-    $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.bundle = 'latin_contents' ");
-    $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
-    $query->leftJoin("file_managed" , "pic" , "pic.fid = field_image.field_image_fid ");
-    $query->leftJoin("field_data_field_latin_contents_topics" , "topics" , "topics.entity_id = node.nid and topics.entity_type = 'node' and topics.bundle = 'latin_contents' and topics.delta = '0' ");
-    $query->leftJoin("taxonomy_term_data" , "term_data" , "term_data.tid = topics.field_latin_contents_topics_tid");
     $query->fields("node" , array("nid" , "title" , "created" , "changed" , "status"));
+
+    $query->leftJoin("field_data_body" , "body" , "body.entity_id = node.nid and body.bundle = 'latin_contents' ");
     $query->addField("body" , "body_value" , "body");
+
+    $query->leftJoin("field_data_field_image" , "field_image" , "field_image.entity_id = node.nid and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
     $query->addField("pic" , "uri" , "picture");
+
+    $query->leftJoin("file_managed" , "pic" , "pic.fid = field_image.field_image_fid ");
     $query->addField("term_data" , "tid" , "topic_tid");
+
+    $query->leftJoin("field_data_field_latin_contents_topics" , "topics" , "topics.entity_id = node.nid and topics.entity_type = 'node' and topics.bundle = 'latin_contents' and topics.delta = '0' ");
     $query->addField("term_data" , "name" , "topic_name");
+
+    $query->leftJoin("taxonomy_term_data" , "term_data" , "term_data.tid = topics.field_latin_contents_topics_tid");
+
     $query->condition("node.type" , "latin_contents");
     $query->condition("node.uid" , $uid);
     if($user->uid != $uid) $query->condition("node.status" , '1');
@@ -357,9 +363,13 @@ function user_resource_posts($parameter , $uid){
                 break;
         }
     }
+
     $query->orderBy("node.nid" , "DESC");
+
     $count = clone ($query);
+
     $query->range($page * $limits , $limits);
+
     $posts = $query->execute()->fetchAll();
 
     foreach ($posts as $post){
@@ -368,7 +378,19 @@ function user_resource_posts($parameter , $uid){
         $post->picture = (!empty($post->picture)) ? generate_file_address($post->picture) : null;
     }
 
-    return ["posts" => $posts , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
+    /*This part is temporary and it will be omitted*/
+    $query = db_select('users' , 'user');
+    $query->condition('user.uid' , $uid);
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id");
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->addField("about_me" , "field_about_me_value" , "about");
+    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
+    $query->addField("job" , "field_job_value" , "job");
+    $account = $query->execute()->fetch();
+    /*--------------------------------------------*/
+
+    return ["posts" => $posts , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page , "brief" => $account];
 }
 
 function user_resource_following($parameter , $uid){
@@ -377,16 +399,21 @@ function user_resource_following($parameter , $uid){
 
     /*fetch the data of the user following*/
     $query = db_select("flagging" , "flag");
-    $query->join("users" , "user" , "flag.entity_id = user.uid");
-    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id and full_name.entity_type = 'user' and full_name.bundle = 'user' ");
-    $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' and field_image.bundle = 'user' ");
-    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
     $query->condition("flag.entity_type" , "user");
     $query->condition("flag.fid" , 3);
     $query->condition("flag.uid" , $uid);
+
+    $query->join("users" , "user" , "flag.entity_id = user.uid");
     $query->fields("user" , array("uid" , "name"));
+
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id and full_name.entity_type = 'user' and full_name.bundle = 'user' ");
     $query->addField("full_name" , "field_full_name_value" , "full_name");
-    $query->addField("image" , "uri" , "picture");
+
+    $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
+    $query->addField("picture" , "uri" , "picture");
+
+    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->addField("about_me" , "field_about_me_value" , "about");
 
     /*sort base on time or name*/
     $sort_base = empty($parameter["sort"]) ? "time" : $parameter["sort"];
@@ -407,6 +434,7 @@ function user_resource_following($parameter , $uid){
     $query->range($page * $limits , $limits);
 
     $count = clone ($query);
+
     $following = $query->execute()->fetchAll();
 
     /*post process on followings*/
@@ -463,16 +491,24 @@ function user_resource_follower($parameter , $uid){
 
     /*fetch the data of the user following*/
     $query = db_select("flagging" , "flag");
-    $query->join("users" , "user" , "flag.uid = user.uid");
-    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id and full_name.entity_type = 'user' and full_name.bundle = 'user' ");
-    $query->leftJoin("field_data_field_image" , "field_image" , "user.uid = field_image.entity_id and field_image.entity_type = 'user' and field_image.bundle = 'user' ");
-    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
     $query->condition("flag.entity_type" , "user");
     $query->condition("flag.fid" , 3);
     $query->condition("flag.entity_id" , $uid);
+
+    $query->join("users" , "user" , "flag.uid = user.uid");
     $query->fields("user" , array("uid" , "name"));
+
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id and full_name.entity_type = 'user' and full_name.bundle = 'user' ");
     $query->addField("full_name" , "field_full_name_value" , "full_name");
-    $query->addField("image" , "uri" , "picture");
+
+    $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
+    $query->addField("picture" , "uri" , "picture");
+
+    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->addField("about_me" , "field_about_me_value" , "about");
+
+    $query->leftJoin("flagging" , "follow_back" , "follow_back.entity_type = 'user' and follow_back.fid = '3' and follow_back.uid = '" . $uid . "' and follow_back.entity_id = user.uid");
+    $query->addField("follow_back" , "entity_id" , "user_follow");
 
     /*sort base on time or name*/
     $sort_base = empty($parameter["sort"]) ? "time" : $parameter["sort"];
@@ -491,7 +527,9 @@ function user_resource_follower($parameter , $uid){
     }
 
     $count = clone ($query);
+
     $query->range($page * $limits , $limits);
+
     $follower = $query->execute()->fetchAll();
 
     /*post process on followings*/
@@ -499,6 +537,8 @@ function user_resource_follower($parameter , $uid){
         if(empty($value->full_name)) $value->full_name = $value->name;
         unset($value->name);
         if(!empty($value->picture)) $value->picture = image_style_url("200x200" , $value->picture);
+
+        $value->user_follow = empty($value->user_follow) ? false : true;
     }
 
     return ["follower" => $follower , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
