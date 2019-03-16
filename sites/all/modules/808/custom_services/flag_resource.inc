@@ -85,6 +85,7 @@ function flag_function($data){
             "sid" => 0,
             "timestamp" => REQUEST_TIME,
         ))->execute();
+        field_cache_clear();
         return true;
     }
     elseif ($data["action"] === 0){
@@ -94,6 +95,7 @@ function flag_function($data){
             ->condition("entity_id" , $data["entity_id"])
             ->condition("uid" , $user->uid)
             ->execute();
+        field_cache_clear();
         return true;
     }
     else return false;
