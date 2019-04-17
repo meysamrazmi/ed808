@@ -79,10 +79,10 @@ function user_resource_retrieve($uid , $parameter){
     return $account;
 }
 function user_resource_update_data($data , $uid){
-    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 10);
+    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
     global $user;
     $account = user_load($uid);
-    if($user->uid != $account->uid) return services_error("You do not have permission for this action" , 18);
+    if($user->uid != $account->uid) return services_error("You do not have permission to do this action" , 403);
 
     $deleted_fid = array();
 
@@ -107,6 +107,8 @@ function user_resource_update_data($data , $uid){
         require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
         $account->pass = user_hash_password(trim($data['password']));
     }
+    if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
+    if(isset($data["laws"]) && $data["laws"] == 1) $account->field_laws["und"][0]["value"] = 1;
     if(isset($data["picture"]) || (!empty($data["picture"]) && strcmp($data["picture"]["type"] , "image") == 0)){
         $old_pic_fid = isset($account->picture->fid) ? $account->picture->fid : 0;
         if($data["picture"] === "delete" && !empty($account->picture)){
@@ -140,7 +142,6 @@ function user_resource_update_data($data , $uid){
             $account->field_files['und']['0'] = $data["cv"];
         }
     }
-    if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
     if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
     if(isset($data["education_degree"])) $account->field_education_degree["und"][0]["value"] = $data["education_degree"];
     if(isset($data["education_field"])) $account->field_education_field["und"][0]["value"] = $data["education_field"];
