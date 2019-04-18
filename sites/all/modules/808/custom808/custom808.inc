@@ -117,7 +117,5 @@ function api_version_delete($id){
 /************************/
 
 function developer(){
-    print REQUEST_TIME;
-
     die();
 }

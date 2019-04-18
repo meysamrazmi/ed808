@@ -11,7 +11,7 @@ function tag_resource_retrieve($tid , $parameter){
     $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
     $query->condition("term_data.tid" , $tid);
     $tag = $query->execute()->fetch();
-    if(empty($tag)) return false;
+    if(empty($tag)) return services_error("Not Found!" , 404);
 
     if(!empty($tag->image)) $tag->image = generate_file_address($tag->image);
 

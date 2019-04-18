@@ -76,8 +76,20 @@ function user_resource_retrieve($uid , $parameter){
         $account->user_follow = is_flagged($user->uid , $uid , "user");
     }
 
+    $token = db_select("custom_linkedIn_token" , "token")
+        ->fields("token" , array("token"))
+        ->condition("uid" , $uid)
+        ->condition("expire" , REQUEST_TIME , ">")
+        ->execute()->fetch();
+    if(empty($token)) $account->has_linkedin = false;
+    else{
+        $account->has_linkedin = true;
+        $account->linkedin_token_expire_in = $token->token;
+    }
+
     return $account;
 }
+
 function user_resource_update_data($data , $uid){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
     global $user;
@@ -206,8 +218,10 @@ function login($data){
             user_login_finalize();
             $login_data = new stdClass();
             $login_data->uid = $user->uid;
+            $login_data->username = $user->name;
+            $login_data->full_name = !empty($user->field_full_name) ? $user->field_full_name["und"][0]["value"] : null;
+            if(!empty($user->picture)) $login_data->picture =  image_style_url("200x200", $user->picture->uri);
             $login_data->token = drupal_get_token('services');
-
             return $login_data;
         }
     }
@@ -264,6 +278,8 @@ function register($new_user){
     user_login_finalize();
     $newUser = new stdClass();
     $newUser->uid = $user->uid;
+    $newUser->username = $user->name;
+    $newUser->full_name = !empty($user->field_full_name) ? $user->field_full_name["und"][0]["value"] : null;
     $newUser->token = drupal_get_token('services');
 
     return $newUser;
@@ -644,3 +660,52 @@ function user_resource_wrote_comments($parameter , $uid){
     return ["comments" => $comments , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
 }
 
+function user_resource_linkedin_profile($parameter , $uid)
+{
+    $token = db_select("custom_linkedIn_token", "token")
+        ->fields("token", array("token"))
+        ->condition("uid", $uid)
+        ->condition("expire", REQUEST_TIME, ">")
+        ->execute()->fetch();
+
+    if (!empty($token)) {
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://api.linkedin.com/v1/people/~:(id,public-profile-url,first-name,last-name,email-address,location,summary,num-connections,formatted-name,headline,industry,specialties,positions,picture-url,picture-urls::(original))?format=json",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => array(
+                "authorization: Bearer " . $token->token,
+                "cache-control: no-cache",
+                "connection: Keep-Alive"
+            ),
+        ));
+        $data = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+        if ($err) {
+            return services_error("Unknown Error!" , 500);
+        }
+        $data = json_decode($data, true);
+
+        $result = array();
+        $result["full_name"] = $data["formattedName"];
+        $result["headline"] = $data["headline"];
+        $result["location"] = $data["location"]["name"];
+        $result["industry"] = $data["industry"];
+        $result["summary"] = $data["summary"];
+        $result["connections"] = $data["numConnections"];
+        $result["profile"] = $data["publicProfileUrl"];
+        $result["picture"] = !empty($data["pictureUrls"]["values"]) ? $data["pictureUrls"]["values"][0] : null;
+        $result["positions"] = $data["positions"]["values"];
+
+        return $result;
+    }
+    return services_error("User has not connected to Linkedin or his/her connection has been expired!" , 404);
+}
+
+/*---------------------functions part------------------------------*/
