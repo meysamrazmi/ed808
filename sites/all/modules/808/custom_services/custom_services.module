@@ -766,7 +766,24 @@ function custom_services_services_resources(){
         ),
         'tag' => array(
             'operations' => array(
-                'index' => array(),
+                'index' => array(
+                    'help' => 'return all tags',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'tag_resource'),
+                    'callback' => 'tag_resource_index',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                    ),
+                ),
                 'retrieve' => array(
                     'help' => 'return a tag information',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'tag_resource'),

@@ -1,6 +1,59 @@
 <?php
 
 /*--------------------operations part-----------------------*/
+function tag_resource_index($parameter){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+    $sort_base = isset($parameter["sort"]) && !empty($parameter["sort"]) ? $parameter["sort"] : "newest";
+
+    $query = db_select("taxonomy_term_data" , "tag");
+    $query->fields("tag" , array("tid" , "name"));
+    $query->condition("tag.vid" , 33);
+
+    $query->leftJoin("field_data_field_image" , " field_image" , "tag.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
+    $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
+    $query->addField("image" , "uri" , "image");
+
+    /*filter the response*/
+    if(isset($parameter["search"]) && strlen($parameter["search"]) > 0){
+        $value = $parameter["search"];
+        $or = db_or();
+        $or->condition("tag.name" , '%' . $value . '%', 'LIKE');
+        $or->condition("tag.description" , '%' . $value . '%', 'LIKE');
+        $query->condition($or);
+    }
+
+    /*sort the response*/
+    switch ($sort_base){
+        case "newest" :
+            $query->orderBy("tag.tid" , "DESC");
+            break;
+
+        case "first" :
+            $query->orderBy("tag.tid" , "ASC");
+            break;
+
+        default :
+            $query->orderBy("tag.tid" , "DESC");
+            break;
+    }
+
+    /*calculating the counts of response*/
+    $count = clone ($query);
+
+    /*filter to limited data*/
+    $query->range($page * $limits , $limits);
+
+    /*filter to limited data*/
+    $tags = $query->execute()->fetchAll();
+
+
+    foreach ($tags as $tag){
+        $tag->image = !empty($tag->image) ? image_style_url("300x200" , $tag->image) : null;
+    }
+    return ["tags" => $tags , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
+}
+
 function tag_resource_retrieve($tid , $parameter){
     $query = db_select("taxonomy_term_data" , "term_data");
     $query->leftJoin("field_data_field_image" , " field_image" , "term_data.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
