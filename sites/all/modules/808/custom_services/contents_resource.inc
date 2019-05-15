@@ -228,6 +228,10 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("ifwebinar" , "field_ifwebinar_value" , "ifwebinar");
 
     /*add 808 suggestion*/
+    $query->leftJoin("field_data_field_need_login_for_register" , "need_login" , "node.nid = need_login.entity_id");
+    $query->addField("need_login" , "field_need_login_for_register_value" , "need_login");
+
+    /*add 808 suggestion*/
     $query->leftJoin("field_data_field_event_808_suggestion" , "808_suggestion" , "node.nid = 808_suggestion.entity_id");
     $query->addField("808_suggestion" , "field_event_808_suggestion_value" , "808_suggestion");
 
@@ -492,18 +496,25 @@ function content_resource_event_list($parameter , $url){
     /*if $url == list then return the upcoming events from today until the end*/
     if(strcmp($url , "list") == 0) {
         $query = db_select("node", "node");
-        $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
-        $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
-        $query->leftJoin('field_data_field_company', 'company', 'company.entity_id = node.nid');
-        $query->leftJoin('field_data_field_ifwebinar', 'ifwebinar', 'ifwebinar.entity_id = node.nid');
-        $query->fields("node", array("nid", "title"));
-        $query->addField("eventtime", "field_eventtime_value", "eventtime");
-        $query->addField("company", "field_company_value", "company");
-        $query->addField("ifwebinar", "field_ifwebinar_value", "webinar");
+        $query->fields("node", array("nid", "title" , "sticky"));
         $query->condition('node.status', 1);
+
+        $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
+
+        $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
+        $query->addField("eventtime", "field_eventtime_value", "eventtime");
         $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", time()), '>=');
+
+        $query->leftJoin('field_data_field_company', 'company', 'company.entity_id = node.nid');
+        $query->addField("company", "field_company_value", "company");
+
+        $query->leftJoin('field_data_field_ifwebinar', 'ifwebinar', 'ifwebinar.entity_id = node.nid');
+        $query->addField("ifwebinar", "field_ifwebinar_value", "webinar");
+
         $query->orderBy('eventtime.field_eventtime_value', 'ASC');
+
         $events = $query->execute()->fetchAll();
+
         return $events;
     }
     /* if $url == all then return the events that is in a month == calender
@@ -523,14 +534,20 @@ function content_resource_event_list($parameter , $url){
          * NOTE: The order is Important for calculate the first day
          */
         $query = db_select("node", "node");
-        $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
-        $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
-        $query->fields("node", array("nid", "title"));
-        $query->addField("eventtime", "field_eventtime_value", "eventtime");
+        $query->fields("node", array("nid", "title" , "sticky"));
         $query->condition('node.status', 1);
+
+        $query->join("field_data_field_latin_contents_types", "contents_types", "contents_types.entity_id = node.nid and contents_types.field_latin_contents_types_tid = '4058' ");
+
+        $query->join("field_data_field_eventtime", "eventtime", "eventtime.entity_id = node.nid");
+        $query->addField("eventtime", "field_eventtime_value", "eventtime");
         $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", $startMonth), '>=');
         $query->condition('eventtime.field_eventtime_value', date("y-m-d h:m:s", $endMonth), '<=');
         $query->orderBy("eventtime.field_eventtime_value" , "ASC");
+
+        $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.bundle = 'latin_contents' ");
+        $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
+
         $events = $query->execute()->fetchAll();
         if(empty($events)) return array();
 
@@ -555,7 +572,7 @@ function content_resource_event_list($parameter , $url){
                 if ($eTime >= $day && $eTime < $tomorrow) {
                     $date = date('Y-m-d',$day);
                     $date = explode("-" , $date);
-                    $date = $date[2];
+                    $date = (int)$date[2];
                     if(!isset($times[$date])) $times[$date] = array();
                     array_push($times[$date], $event);
                     $continue = false;

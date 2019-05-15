@@ -14,6 +14,20 @@ function tag_resource_index($parameter){
     $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
     $query->addField("image" , "uri" , "image");
 
+    $contentCount = db_select("field_data_field_latin_tags" , "latin_tag");
+    $contentCount->addField("latin_tag" , "field_latin_tags_tid" , "tid");
+    $contentCount->groupBy("field_latin_tags_tid");
+    $contentCount->addExpression("COUNT(entity_id)" , "countContents");
+    $query->join($contentCount , "contentCount" , "contentCount.tid = tag.tid");
+    $query->fields("contentCount" , array("countContents"));
+
+    $userFollow = db_select("flagging" , "flag");
+    $userFollow->addField("flag" , "entity_id" , "tid");
+    $userFollow->groupBy("entity_id");
+    $userFollow->addExpression("COUNT(uid)" , "userContents");
+    $query->leftJoin($userFollow , "flag" , "flag.tid = tag.tid");
+    $query->fields("flag" , array("userContents"));
+
     /*filter the response*/
     if(isset($parameter["search"]) && strlen($parameter["search"]) > 0){
         $value = $parameter["search"];
@@ -33,6 +47,22 @@ function tag_resource_index($parameter){
             $query->orderBy("tag.tid" , "ASC");
             break;
 
+        case "most_content" :
+            $query->orderBy("contentCount.countContents" , "DESC")->orderBy("tag.tid" , "DESC");
+            break;
+
+        case "least_content" :
+            $query->orderBy("contentCount.countContents" , "ASC")->orderBy("tag.tid" , "DESC");
+            break;
+
+        case "most_user" :
+            $query->orderBy("flag.userContents" , "DESC")->orderBy("tag.tid" , "DESC");
+            break;
+
+        case "least_user" :
+            $query->orderBy("flag.userContents" , "ASC")->orderBy("tag.tid" , "DESC");
+            break;
+
         default :
             $query->orderBy("tag.tid" , "DESC");
             break;
@@ -50,8 +80,11 @@ function tag_resource_index($parameter){
 
     foreach ($tags as $tag){
         $tag->image = !empty($tag->image) ? image_style_url("300x200" , $tag->image) : null;
+        $tag->tid = (int) $tag->tid;
+        $tag->countContents = (int) $tag->countContents;
+        $tag->userContents = empty($tag->userContents) ? 0 : (int) $tag->userContents;
     }
-    return ["tags" => $tags , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => $page];
+    return ["tags" => $tags , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => (int) $page];
 }
 
 function tag_resource_retrieve($tid , $parameter){
