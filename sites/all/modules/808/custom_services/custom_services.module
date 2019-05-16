@@ -636,6 +636,31 @@ function custom_services_services_resources(){
                         ),
                     )
                 ),
+                'services' => array(
+                    'help' => 'Return list of services',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),
+                    'callback' => 'content_resource_services_list',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of api',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'url',
+                            'type' => 'string',
+                            'description' => 'Just use for url address.',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                        ),
+                    )
+                ),
                 'comments' => array(
                     'help' => 'Return comments',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'contents_resource'),

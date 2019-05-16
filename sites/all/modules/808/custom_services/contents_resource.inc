@@ -587,6 +587,45 @@ function content_resource_event_list($parameter , $url){
     }
 }
 
+function content_resource_services_list($parameter , $url){
+    $query = db_select("node" , "node");
+    $query->fields("node" , array("nid" , "title" , "uid" , "created" , "changed"));
+    $query->condition("node.status" , 1);
+    $query->condition("node.type" , "latin_contents");
+
+    /*filter the Services*/
+    $query->join("field_data_field_latin_contents_types" , "type" , "node.nid = type.entity_id and type.field_latin_contents_types_tid = '4599' ");
+
+    /*add picture*/
+    $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
+    $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
+    $query->addField("file" , "uri" , "picture");
+
+    /*add author full name*/
+    $query->join("users" , "user" , "user.uid = node.uid");
+    $query->leftJoin("field_data_field_full_name" , "name" , "user.uid = name.entity_id and name.entity_type = 'user' and name.bundle = 'user' ");
+    $query->addField("name" , "field_full_name_value" , "author_name");
+
+    /*add author pic*/
+    $query->leftJoin("file_managed" , "user_pic" , "user_pic.fid = user.picture");
+    $query->addField("user_pic" , "uri" , "author_pic");
+
+    $contents = $query->execute()->fetchAll();
+
+    foreach ($contents as $content){
+        $content->created_timestamp = $content->created;
+        $content->created = date("F j, Y" , $content->created);
+
+        $content->changed_timestamp = $content->changed;
+        $content->changed = date("F j, Y" , $content->changed);
+
+        $content->picture = !empty($content->picture) ? image_style_url("300x200" , $content->picture) : null;
+        $content->author_pic = !empty($content->author_pic) ? image_style_url("60x60" , $content->author_pic) : null;
+    }
+
+    return $contents;
+}
+
 /**
  * Returns the comments of a node
  */

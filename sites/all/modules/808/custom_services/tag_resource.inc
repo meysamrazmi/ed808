@@ -2,9 +2,10 @@
 
 /*--------------------operations part-----------------------*/
 function tag_resource_index($parameter){
+    global $user;
     $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
     $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
-    $sort_base = isset($parameter["sort"]) && !empty($parameter["sort"]) ? $parameter["sort"] : "newest";
+    $sort_base = isset($parameter["sort"]) && !empty($parameter["sort"]) ? $parameter["sort"] : "most_content";
 
     $query = db_select("taxonomy_term_data" , "tag");
     $query->fields("tag" , array("tid" , "name"));
@@ -14,19 +15,26 @@ function tag_resource_index($parameter){
     $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
     $query->addField("image" , "uri" , "image");
 
+    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "tag.tid = meta_description.entity_id and meta_description.bundle = 'latin_tags' ");
+    $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
+
     $contentCount = db_select("field_data_field_latin_tags" , "latin_tag");
     $contentCount->addField("latin_tag" , "field_latin_tags_tid" , "tid");
     $contentCount->groupBy("field_latin_tags_tid");
-    $contentCount->addExpression("COUNT(entity_id)" , "countContents");
+    $contentCount->addExpression("COUNT(entity_id)" , "count_contents");
     $query->join($contentCount , "contentCount" , "contentCount.tid = tag.tid");
-    $query->fields("contentCount" , array("countContents"));
+    $query->fields("contentCount" , array("count_contents"));
 
     $userFollow = db_select("flagging" , "flag");
     $userFollow->addField("flag" , "entity_id" , "tid");
+    $userFollow->condition("flag.fid" , 2);
     $userFollow->groupBy("entity_id");
-    $userFollow->addExpression("COUNT(uid)" , "userContents");
+    $userFollow->addExpression("COUNT(uid)" , "follower_count");
     $query->leftJoin($userFollow , "flag" , "flag.tid = tag.tid");
-    $query->fields("flag" , array("userContents"));
+    $query->fields("flag" , array("follower_count"));
+
+    $query->leftJoin("flagging" , "user_flag" , "user_flag.entity_id = tag.tid and user_flag.fid = '2' and user_flag.uid = '" . $user->uid . "'");
+    $query->addField("user_flag" , "flagging_id" , "user_follow");
 
     /*filter the response*/
     if(isset($parameter["search"]) && strlen($parameter["search"]) > 0){
@@ -48,19 +56,11 @@ function tag_resource_index($parameter){
             break;
 
         case "most_content" :
-            $query->orderBy("contentCount.countContents" , "DESC")->orderBy("tag.tid" , "DESC");
-            break;
-
-        case "least_content" :
-            $query->orderBy("contentCount.countContents" , "ASC")->orderBy("tag.tid" , "DESC");
+            $query->orderBy("contentCount.count_contents" , "DESC")->orderBy("tag.tid" , "DESC");
             break;
 
         case "most_user" :
-            $query->orderBy("flag.userContents" , "DESC")->orderBy("tag.tid" , "DESC");
-            break;
-
-        case "least_user" :
-            $query->orderBy("flag.userContents" , "ASC")->orderBy("tag.tid" , "DESC");
+            $query->orderBy("flag.follower_count" , "DESC")->orderBy("tag.tid" , "DESC");
             break;
 
         default :
@@ -81,22 +81,27 @@ function tag_resource_index($parameter){
     foreach ($tags as $tag){
         $tag->image = !empty($tag->image) ? image_style_url("300x200" , $tag->image) : null;
         $tag->tid = (int) $tag->tid;
-        $tag->countContents = (int) $tag->countContents;
-        $tag->userContents = empty($tag->userContents) ? 0 : (int) $tag->userContents;
+        $tag->count_contents = empty($tag->count_contents) ? 0 : (int) $tag->count_contents;
+        $tag->follower_count = empty($tag->follower_count) ? 0 : (int) $tag->follower_count;
+        $tag->user_follow = empty($tag->user_follow) ? false : true;
     }
     return ["tags" => $tags , "count" => (int) $count->countQuery()->execute()->fetchField() , "page" => (int) $page];
 }
 
 function tag_resource_retrieve($tid , $parameter){
     $query = db_select("taxonomy_term_data" , "term_data");
+    $query->fields("term_data" , array("tid" , "name" , "description"));
+    $query->condition("term_data.tid" , $tid);
+
     $query->leftJoin("field_data_field_image" , " field_image" , "term_data.tid = field_image.entity_id and field_image.entity_type = 'taxonomy_term' ");
     $query->leftJoin("file_managed" , "image" , "image.fid = field_image.field_image_fid");
-    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "term_data.tid = meta_description.entity_id and meta_description.bundle = 'latin_tags' ");
-    $query->fields("term_data" , array("tid" , "name" , "description"));
     $query->addField("image" , "uri" , "image");
+
+    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "term_data.tid = meta_description.entity_id and meta_description.bundle = 'latin_tags' ");
     $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
-    $query->condition("term_data.tid" , $tid);
+
     $tag = $query->execute()->fetch();
+
     if(empty($tag)) return services_error("Not Found!" , 404);
 
     if(!empty($tag->image)) $tag->image = generate_file_address($tag->image);
