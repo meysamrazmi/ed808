@@ -839,7 +839,7 @@ function custom_services_services_resources(){
                 'list' => array(
                     'help' => 'Return new event list',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'tag_resource'),
-                    'callback' => 'tag_resource_relationships_list',
+                    'callback' => 'tag_resource_list',
                     'access callback' => 'user_access',
                     'access arguments' => array('access content'),
                     'access arguments append' => FALSE,
@@ -856,6 +856,31 @@ function custom_services_services_resources(){
                             'name' => 'url',
                             'type' => 'string',
                             'description' => 'Just use for url address.',
+                            'source' => array('path' => 0),
+                            'optional' => False,
+                        ),
+                    )
+                ),
+                'follower' => array(
+                    'help' => 'Return new event list',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'tag_resource'),
+                    'callback' => 'tag_resource_followers',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'parameter of api',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'tid',
+                            'type' => 'int',
+                            'description' => 'tid of the tag',
                             'source' => array('path' => 0),
                             'optional' => False,
                         ),
@@ -1102,7 +1127,38 @@ function custom_services_services_resources(){
                     ),
                 )
             ),
-        )
+        ),
+
+        'test' => array(
+            'operations' => array(
+                'index' => array(
+                    'help' => 'return all contents',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'test'),
+                    'callback' => 'contents_resource_index',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'parameter',
+                            'type' => 'array',
+                            'description' => 'Parameters of request.',
+                            'source' => array('param' => 'parameter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                        array(
+                            'name' => 'filter',
+                            'type' => 'array',
+                            'description' => 'Filters of request.',
+                            'source' => array('param' => 'filter'),
+                            'optional' => True,
+                            'default' => array()
+                        ),
+                    ),
+                )
+            )
+        ),
 	);
 }
 function upload_file($parameter) {

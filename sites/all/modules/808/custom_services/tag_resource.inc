@@ -113,7 +113,7 @@ function tag_resource_retrieve($tid , $parameter){
 }
 /*----------------------------------------------------------*/
 /*-----------------relationships part-----------------------*/
-function tag_resource_relationships_list($parameter , $url){
+function tag_resource_list($parameter , $url){
     /*
      * This part return the most used tags in all contents
      * with pic and description
@@ -142,5 +142,34 @@ function tag_resource_relationships_list($parameter , $url){
         $result = $query->execute()->fetchAll();
         return $result;
     }
+}
+
+function tag_resource_followers($parameter, $tid){
+    $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
+    $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
+
+    $query = db_select("flagging" , "flagging");
+    $query->fields("flagging" , array("uid"));
+    $query->condition("flagging.entity_id" , $tid);
+    $query->condition("flagging.entity_type" , "taxonomy_term");
+    $query->condition("flagging.fid" , 2);
+    $uids = $query->execute()->fetchCol();
+    if(empty($uids)) return array();
+
+    $query = db_select("users" , "user");
+    $query->fields("user" , array("uid" , "name"));
+    $query->condition("user.uid" , $uids, "IN");
+
+    $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
+    $query->addField("picture" , "uri" , "picture");
+
+    $query->leftJoin("field_data_field_full_name" , "full_name" , "user.uid = full_name.entity_id");
+    $query->addField("full_name" , "field_full_name_value" , "full_name");
+
+    $query->range($page * $limits, $limits);
+
+    $followers = $query->execute()->fetchAll();
+
+    return array("followers" => $followers , "page" => $page);
 }
 /*----------------------------------------------------------*/
