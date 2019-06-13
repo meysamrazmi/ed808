@@ -34,20 +34,10 @@ function linked_in_join(){
     $error = isset($_GET["error"]) && !empty($_GET["error"]) ? $_GET["error"] : "";
 
     if(($error === "user_cancelled_login" || $error === "user_cancelled_authorize")){
-        $parameter[] = "error=" . $error;
-        $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
-        $path = $base_url . "?" . $param;
-        drupal_goto($path);
-        die();
+        redirect_error($error);
     }
     if(empty($code)){
-        $parameter[] = "error=unknown";
-        $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
-        $path = $base_url . "?" . $param;
-        drupal_goto($path);
-        die();
+        redirect_error();
     }
 
     /*sending a request to get access token*/
@@ -69,21 +59,11 @@ function linked_in_join(){
     $err = curl_error($curl);
     curl_close($curl);
     if($err){
-        $parameter[] = "error=unknown";
-        $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
-        $path = $base_url . "?" . $param;
-        drupal_goto($path);
-        die();
+        redirect_error();
     }
     $response = json_decode($response, true);
     if(isset($response["error"]) && !empty($response["error"])){
-        $parameter[] = "error=unknown";
-        $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
-        $path = $base_url . "?" . $param;
-        drupal_goto($path);
-        die();
+        redirect_error();
     }
 
     /* If token is fetched correctly
@@ -91,7 +71,7 @@ function linked_in_join(){
      */
     $curl = curl_init();
     curl_setopt_array($curl, array(
-        CURLOPT_URL => "https://api.linkedin.com/v1/people/~:(first-name,last-name,formatted-name,email-address)?format=json",
+        CURLOPT_URL => "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => "",
         CURLOPT_MAXREDIRS => 10,
@@ -108,15 +88,11 @@ function linked_in_join(){
     $err = curl_error($curl);
     curl_close($curl);
     if($err){
-        $parameter[] = "error=unknown";
-        $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
-        $path = $base_url . "?" . $param;
-        drupal_goto($path);
-        die();
+        redirect_error();
     }
-    $profile = json_decode($data, true);
-    $email = $profile["emailAddress"];
+
+    $email = json_decode($data, true);
+    $email = $email["elements"][0]["handle~"]["emailAddress"];
 
     /*if user has already logged in, just redirect */
     global $user;
@@ -125,7 +101,7 @@ function linked_in_join(){
         $parameter[] = "token=" . drupal_get_token('services');
         $parameter[] = "action=login";
         $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
+        $base_url = "https://ed808.com/login/linkedin";
         $path = $base_url . "?" . $param;
         drupal_goto($path);
         die();
@@ -134,15 +110,40 @@ function linked_in_join(){
     /*get the uid with this email for making the user login*/
     $uid = db_select("users" , "user")->fields("user" , array("uid"))->condition("mail" , $email)->execute()->fetch();
     if(empty($uid)){
-        $full_name = $profile["formatted-name"];
         $username = explode("@" , $email);
         $username = $username[0];
-
         do {
             $check_username = db_select("users", "user")->fields("user", array("uid"))->condition("name", $username)->execute()->fetch();
             if(!empty($check_username)) $username .= '1';
         }while(!empty($check_username));
 
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://api.linkedin.com/v2/me",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => array(
+                "authorization: Bearer " . $response["access_token"],
+                "cache-control: no-cache",
+                "connection: Keep-Alive"
+            ),
+        ));
+        $data = curl_exec($curl);
+        $err = curl_error($curl);
+        if($err){
+            redirect_error();
+        }
+        curl_close($curl);
+        $data = json_decode($data);
+        $full_name = $data->localizedFirstName . " " . $data->localizedLastName;
+        $full_name = trim($full_name);
+        if(empty($full_name)){
+            redirect_error();
+        }
         $pass = user_password();
         $new_user = array(
             'name' => $username,
@@ -182,9 +183,17 @@ function linked_in_join(){
     $parameter[] = "token=" . drupal_get_token('services');
     $parameter[] = "action=" . $location;
     $param = implode("&" , $parameter);
-    $base_url = "https://ed808.com:2/login/linkedin";
+    $base_url = "https://ed808.com/login/linkedin";
     $path = $base_url . "?" . $param;
     drupal_goto($path);
+}
+function redirect_error($error = "unknown"){
+    $parameter[] = "error=" . $error;
+    $param = implode("&" , $parameter);
+    $base_url = "https://ed808.com/login/linkedin";
+    $path = $base_url . "?" . $param;
+    drupal_goto($path);
+    die();
 }
 
 /*connect the profile to linkedin*/
@@ -195,7 +204,7 @@ function linked_in_connect(){
     if(($error === "user_cancelled_login" || $error === "user_cancelled_authorize")){
         $parameter[] = "error=" . $error;
         $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
+        $base_url = "https://ed808.com/login/linkedin";
         $path = $base_url . "?" . $param;
         drupal_goto($path);
         die();
@@ -203,7 +212,7 @@ function linked_in_connect(){
     if(empty($code)){
         $parameter[] = "error=unknown";
         $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
+        $base_url = "https://ed808.com/login/linkedin";
         $path = $base_url . "?" . $param;
         drupal_goto($path);
         die();
@@ -230,7 +239,7 @@ function linked_in_connect(){
     if($err){
         $parameter[] = "error=unknown";
         $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
+        $base_url = "https://ed808.com/login/linkedin";
         $path = $base_url . "?" . $param;
         drupal_goto($path);
         die();
@@ -239,7 +248,7 @@ function linked_in_connect(){
     if(isset($response["error"]) && !empty($response["error"])){
         $parameter[] = "error=unknown";
         $param = implode("&" , $parameter);
-        $base_url = "https://ed808.com:2/login/linkedin";
+        $base_url = "https://ed808.com/login/linkedin";
         $path = $base_url . "?" . $param;
         drupal_goto($path);
         die();
@@ -260,7 +269,7 @@ function linked_in_connect(){
     $parameter[] = "uid=" . $user->uid;
     $parameter[] = "action=connect";
     $param = implode("&" , $parameter);
-    $base_url = "https://ed808.com:2/login/linkedin";
+    $base_url = "https://ed808.com/login/linkedin";
     $path = $base_url . "?" . $param;
     drupal_goto($path);
 }
