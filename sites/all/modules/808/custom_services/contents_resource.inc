@@ -74,6 +74,10 @@ function contents_resource_index($parameter){
     $query->leftJoin("field_data_body" , "body" , "node.nid = body.entity_id and body.entity_type = 'node' and body.bundle = 'latin_contents' ");
     $query->addField("body" , "body_value" , "body");
 
+    /*add description*/
+    $query->leftJoin("field_data_field_meta_description" , "meta_description" , "node.nid = meta_description.entity_id and meta_description.entity_type = 'node' and meta_description.bundle = 'latin_contents' ");
+    $query->addField("meta_description" , "field_meta_description_value" , "meta_description");
+
     /*add first picture*/
     $query->leftJoin("field_data_field_image" , "field_image" , "node.nid = field_image.entity_id and field_image.entity_type = 'node' and field_image.bundle = 'latin_contents' and field_image.delta = '0' ");
     $query->leftJoin("file_managed" , "file" , "file.fid = field_image.field_image_fid");
@@ -200,7 +204,7 @@ function contents_resource_retrieve($nid , $parameter){
     $query->addField("image" , "uri" , "image");
 
     /*add video link*/
-    $query->leftJoin("field_data_field_link" , "field_link" , "field_link.entity_id = node.nid");
+    $query->leftJoin("field_data_field_link" , "field_link" , "field_link.entity_id = node.nid and field_link.delta = '0' ");
     $query->addField("field_link" , "field_link_url" , "video_link");
 
     /*add event time*/
@@ -261,13 +265,13 @@ function contents_resource_retrieve($nid , $parameter){
     $content->created = date("F j, Y" , $content->created);
     $content->changed = date("F j, Y" , $content->changed);
     if(!empty($content->image)) $content->image = generate_file_address($content->image);
-    if(isset($content->event_time)){
-        $time = explode(" " , $content->event_time);
-        $date = explode("-" , $time[0]);
-        $times = explode(":" , $time[1]);
-        $timestamp = mktime($times[0], $times[1], $times[2], $date[1], $date[2], $date[0]);
-        $content->event_time = date("F j, Y" , $timestamp);
-    }
+//    if(isset($content->event_time)){
+//        $time = explode(" " , $content->event_time);
+//        $date = explode("-" , $time[0]);
+//        $times = explode(":" , $time[1]);
+//        $timestamp = mktime($times[0], $times[1], $times[2], $date[1], $date[2], $date[0]);
+//        $content->event_time = date("F j, Y" , $timestamp);
+//    }
     $content->clap_point = empty($content->clap_point) ? 0 : (int) $content->clap_point;
     $content->user_clap = empty($content->user_clap) ? 0 : (int) $content->user_clap;
     $content->references =  array();
@@ -773,8 +777,8 @@ function fetch_content_relatives($node_id , $refresh = false){
     $relatives = db_select("relative_contents" , "relative")->fields("relative" , array())
             ->condition("entity_id" , $node_id)->condition("entity_type" , "node")->execute()->fetch();
 
-    /*find the timestamp for 5 days before*/
-    $time = strtotime('-5 day' , REQUEST_TIME);
+    /*find the timestamp for 1 days before*/
+    $time = strtotime('-1 day' , REQUEST_TIME);
 
     /*if there is no record or old record update compute again else fetch data from db*/
     if(empty($relatives) || $relatives->date < $time || $refresh){
@@ -800,7 +804,7 @@ function fetch_content_relatives($node_id , $refresh = false){
         $nodes = $query->execute()->fetchCol();
         foreach($nodes as $nid) if(isset($priority[$nid])) $priority[$nid] += 3; else $priority[$nid] = 3;
 
-        /*check relatives on categories with tags 2*/
+        /*check relatives on tags with priority 2*/
         $query = db_select("field_data_field_latin_tags" , "node_tag");
         $query->join("field_data_field_latin_tags" , "relative_tag" , "node_tag.field_latin_tags_tid = relative_tag.field_latin_tags_tid and relative_tag.entity_type = 'node' and relative_tag.bundle = 'latin_contents' ");
         $query->join("node" , "node" , "node.nid = relative_tag.entity_id and node.status = '1' ");
@@ -810,7 +814,7 @@ function fetch_content_relatives($node_id , $refresh = false){
         $nodes = $query->execute()->fetchCol();
         foreach($nodes as $nid) if(isset($priority[$nid])) $priority[$nid] += 2; else $priority[$nid] = 2;
 
-        /*check relatives on types with tags 1*/
+        /*check relatives on types with priority 1*/
         $query = db_select("field_data_field_latin_contents_types" , "node_types");
         $query->join("field_data_field_latin_contents_types" , "relative_types" , "relative_types.field_latin_contents_types_tid = node_types.field_latin_contents_types_tid and relative_types.entity_type = 'node' and relative_types.bundle = 'latin_contents' ");
         $query->join("node" , "node" , "node.nid = relative_types.entity_id and node.status = '1' ");
@@ -822,11 +826,11 @@ function fetch_content_relatives($node_id , $refresh = false){
 
         arsort($priority);
 
-        $n = 3;
         /* choosing random n-randoms nids from top priority
          * in $last array categorize the nids based on the priority
          * the nids that have same priority are put in the same array
          */
+        $n = 3;
         $max = 10;
         $last = array();
         $count = 0;
@@ -853,7 +857,12 @@ function fetch_content_relatives($node_id , $refresh = false){
             }
             elseif($capacity > 0){
                 $random_keys = array_rand($value,$capacity);
-                foreach ($random_keys as $k) $priority[$k] = $value[$k];
+                if(is_array($random_keys)) {
+                    foreach ($random_keys as $k) $priority[$k] = $value[$k];
+                }
+                else{
+                    $priority[$random_keys] = $value[$random_keys];
+                }
             }
         }
 
@@ -874,6 +883,7 @@ function fetch_content_relatives($node_id , $refresh = false){
         $nodes = db_select("node" , "node")->fields("node" , array("nid"));
         $nodes->condition("node.nid" , array_keys($nids) , "IN")->condition("node.status" , 1);
         $nodes = $nodes->execute()->fetchCol();
+        /*if a related node has became unpublished we need to fetch them again*/
         if(count($nodes) < count(array_keys($nids))) return fetch_content_relatives($node_id , true);
     }
 
