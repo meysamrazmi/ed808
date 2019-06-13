@@ -432,6 +432,9 @@ function user_resource_following($parameter , $uid){
     $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
     $query->addField("about_me" , "field_about_me_value" , "about");
 
+    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id and job.entity_type = 'user' and job.bundle = 'user' ");
+    $query->addField("job" , "field_job_value" , "job");
+
     /*sort base on time or name*/
     $sort_base = empty($parameter["sort"]) ? "time" : $parameter["sort"];
     if(!empty($parameter["sort_dir"]) && ($parameter["sort_dir"] === "ASC" || $parameter["sort_dir"] === "DESC")) $sort_dir = $parameter["sort_dir"];
@@ -521,8 +524,11 @@ function user_resource_follower($parameter , $uid){
     $query->leftJoin("file_managed" , "picture" , "picture.fid = user.picture");
     $query->addField("picture" , "uri" , "picture");
 
-    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
+    $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id and about_me.entity_type = 'user' and about_me.bundle = 'user' ");
     $query->addField("about_me" , "field_about_me_value" , "about");
+
+    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id and job.entity_type = 'user' and job.bundle = 'user' ");
+    $query->addField("job" , "field_job_value" , "job");
 
     $query->leftJoin("flagging" , "follow_back" , "follow_back.entity_type = 'user' and follow_back.fid = '3' and follow_back.uid = '" . $uid . "' and follow_back.entity_id = user.uid");
     $query->addField("follow_back" , "entity_id" , "user_follow");
