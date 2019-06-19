@@ -157,6 +157,7 @@ function linked_in_join(){
             'field_full_name' => array('und' => array(0 => array('value' => $full_name))),
         );
         $user = user_save('', $new_user);
+        _user_mail_notify('register_no_approval_required', $user);
         user_login_finalize();
         $location = "register";
     }

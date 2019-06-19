@@ -273,6 +273,7 @@ function register($new_user){
 
     /*create new user*/
     $user = user_save('' , $new_user);
+    _user_mail_notify('register_no_approval_required', $user);
 
     /*login user*/
     user_login_finalize();

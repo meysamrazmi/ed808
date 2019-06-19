@@ -145,6 +145,8 @@ function tag_resource_list($parameter , $url){
 }
 
 function tag_resource_followers($parameter, $tid){
+    global $user;
+
     $page = isset($parameter["page"]) && !empty($parameter["page"]) ? $parameter["page"] : 0;
     $limits = isset($parameter["limits"]) && !empty($parameter["limits"]) ? $parameter["limits"] : 30;
 
@@ -169,6 +171,14 @@ function tag_resource_followers($parameter, $tid){
     $query->range($page * $limits, $limits);
 
     $followers = $query->execute()->fetchAll();
+
+    foreach ($followers as $follower){
+        if(!empty($follower->picture)) $follower->picture = image_style_url("60x60" , $follower->picture);
+
+        if($user->uid != $follower->uid){
+            $follower->user_follow = is_flagged($user->uid , $follower->uid , "user");
+        }
+    }
 
     return array("followers" => $followers , "page" => $page);
 }
