@@ -45,6 +45,30 @@ function user_resource_retrieve($uid , $parameter){
 
     if(empty($account)) return services_error("User is not exist!" , 404);
 
+    $query = db_select("user_jobs" , "job");
+    $query->fields("job" , array());
+    $query->condition("job.uid" , $uid);
+    $query->orderBy("job.start" , "DESC")->orderBy("job.jid" , "DESC");
+    $jobs_data = $query->execute()->fetchAll();
+    if(!empty($jobs_data)){
+        $jobs = array("work" => array() , "university" => array());
+        foreach ($jobs_data as $value){
+            switch ($value->type){
+                case "work":
+                    array_push($jobs["work"] , $value);
+                    break;
+
+                case "university":
+                    array_push($jobs["university"] , $value);
+                    break;
+            }
+
+        }
+        $account->jobs = $jobs;
+    }else{
+        $account->jobs = array();
+    }
+
     $account->created = date("F j, Y" , $account->created);
     $account->login = date("F j, Y" , $account->login);
 
@@ -120,6 +144,9 @@ function user_resource_update_data($data , $uid){
         $account->pass = user_hash_password(trim($data['password']));
     }
     if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
+    if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
+    if(isset($data["country"])) $account->field_country["und"][0]["value"] = $data["country"];
+    if(isset($data["about"])) $account->field_about_me["und"][0]["value"] = $data["about"];
     if(isset($data["laws"]) && $data["laws"] == 1) $account->field_laws["und"][0]["value"] = 1;
     if(isset($data["picture"]) || (!empty($data["picture"]) && strcmp($data["picture"]["type"] , "image") == 0)){
         $old_pic_fid = isset($account->picture->fid) ? $account->picture->fid : 0;
@@ -154,19 +181,64 @@ function user_resource_update_data($data , $uid){
             $account->field_files['und']['0'] = $data["cv"];
         }
     }
-    if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
+
     if(isset($data["education_degree"])) $account->field_education_degree["und"][0]["value"] = $data["education_degree"];
     if(isset($data["education_field"])) $account->field_education_field["und"][0]["value"] = $data["education_field"];
     if(isset($data["university"])) $account->field_university["und"][0]["value"] = $data["university"];
     if(isset($data["job"])) $account->field_job["und"][0]["value"] = $data["job"];
+
     if(isset($data["skills"])) $account->field_skills["und"][0]["value"] = $data["skills"];
-    if(isset($data["about"])) $account->field_about_me["und"][0]["value"] = $data["about"];
 
     user_save($account);
 
     module_invoke_all('field_storage_pre_update' , "user" , $account);
 
     foreach ($deleted_fid as $fid) delete_file($fid , array("hash" => hash_hmac("sha256" , "file" , "@Civil808Android@Saze808@" , false)));
+
+    /*adding or updating user's jobs*/
+    if (isset($data["jobs"]) && !empty($data["jobs"])) {
+        $job = $data["jobs"];
+        /*check if user wants to update previous data or inserts new one*/
+        if (isset($job["jid"]) && !empty($job["jid"])) {
+            /*check if user wants to delete his jobs or update them*/
+            if(isset($job["delete"]) && $job["delete"] == 1){
+                $delete = db_delete("user_jobs")
+                    ->condition("jid" , $job["jid"])
+                    ->condition("uid" , $uid)
+                    ->execute();
+            }
+            else{
+                $update = db_update("user_jobs")
+                    ->fields(array(
+                        'title' => $job["title"],
+                        'position' => empty($job["position"]) ? null :$job["position"],
+                        'location' => empty($job["location"]) ? null :$job["location"],
+                        'start' => empty($job["start"]) ? 0 :$job["start"],
+                        'end' => empty($job["end"]) ? 0 :$job["end"],
+                        'description' => empty($job["description"]) ? null :$job["description"],
+                    ))
+                    ->condition("jid" , $job["jid"])
+                    ->condition("uid" , $uid)
+                    ->execute();
+            }
+
+        }
+        else {
+            $jid = db_insert("user_jobs")
+                ->fields(array(
+                    'uid' => $uid,
+                    'type' => $job["type"],
+                    'title' => $job["title"],
+                    'position' => empty($job["position"]) ? null :$job["position"],
+                    'location' => empty($job["location"]) ? null :$job["location"],
+                    'start' => empty($job["start"]) ? 0 :$job["start"],
+                    'end' => empty($job["end"]) ? 0 :$job["end"],
+                    'description' => empty($job["description"]) ? null :$job["description"],
+                ))
+                ->execute();
+        }
+    }
+
 
     return user_resource_retrieve($account->uid , array());
 }

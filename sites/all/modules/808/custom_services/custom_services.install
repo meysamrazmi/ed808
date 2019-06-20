@@ -311,6 +311,79 @@ function custom_services_update_7107(){
     db_create_table('user_temp_interests', $schema['user_temp_interests']);
 }
 
+/**
+ * Create new database table {user_jobs}.
+ */
+function custom_services_update_7108(){
+    $schema['user_jobs'] = array(
+        'fields' => array(
+            'jid' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => 'Primary Key - id',
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => t('User id'),
+            ),
+            'type' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The type of the job',
+            ),
+            'title' => array(
+                'type' => 'varchar',
+                'length' => 256,
+                'not null' => False,
+                'description' => 'The title of the job',
+            ),
+            'position' => array(
+                'type' => 'varchar',
+                'length' => 256,
+                'not null' => False,
+                'description' => 'The position of the job',
+            ),
+            'location' => array(
+                'type' => 'varchar',
+                'length' => 256,
+                'not null' => False,
+                'description' => 'The location of the job',
+            ),
+            'start' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when the job has started.',
+                'default' => 0
+            ),
+            'end' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when the job has finished.',
+                'default' => 0
+            ),
+            'description' => array(
+                'type' => 'text',
+                'size' => 'normal',
+                'not null' => False,
+                'description' => 'The description of the job',
+            ),
+        ),
+
+        'primary key' => array('jid'),
+        'foreign keys' => array(
+            'uid' => array(
+                'table' => 'users',
+                'columns' => array('uid' => 'uid'),
+            ),
+        ),
+    );
+    db_create_table('user_jobs', $schema['user_jobs']);
+}
+
 /*
  * Implementation of hook_install()
 */
