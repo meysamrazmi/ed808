@@ -235,6 +235,7 @@ function _user_resource_definition() {
             ),
           ),
         ),
+        /*
         'password_reset' => array(
           'access callback' => '_user_resource_access',
           'access arguments' => array('password_reset'),
@@ -250,6 +251,7 @@ function _user_resource_definition() {
             ),
           ),
         ),
+        */
         'resend_welcome_email' => array(
           'access callback' => '_user_resource_access',
           'access arguments' => array('resend_welcome_email'),

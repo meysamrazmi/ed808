@@ -140,6 +140,23 @@ function custom_services_services_resources(){
                         ),
                     ),
                 ),
+                'password_reset' => array(
+                    'help' => 'reset password',
+                    'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),
+                    'callback' => 'user_resource_reset_password',
+                    'access callback' => 'user_access',
+                    'access arguments' => array('access content'),
+                    'access arguments append' => FALSE,
+                    'args' => array(
+                        array(
+                            'name' => 'data',
+                            'type' => 'array',
+                            'description' => 'User data',
+                            'source' => 'data',
+                            'optional' => FALSE,
+                        ),
+                    ),
+                ),
                 'exist' => array(
                     'help' => 'Check user is exist or not!',
                     'file' => array('type' => 'inc', 'module' => 'custom_services', 'name' => 'user_resource'),

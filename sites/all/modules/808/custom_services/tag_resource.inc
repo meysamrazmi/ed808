@@ -156,7 +156,7 @@ function tag_resource_followers($parameter, $tid){
     $query->condition("flagging.entity_type" , "taxonomy_term");
     $query->condition("flagging.fid" , 2);
     $uids = $query->execute()->fetchCol();
-    if(empty($uids)) return array();
+    if(empty($uids)) return array("followers" => array() , "page" => $page);
 
     $query = db_select("users" , "user");
     $query->fields("user" , array("uid" , "name"));

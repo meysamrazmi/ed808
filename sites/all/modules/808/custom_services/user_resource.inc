@@ -139,9 +139,12 @@ function user_resource_update_data($data , $uid){
         else return services_error(t("This Email is already taken!") , 18);
     }
     if(isset($data["password"]) && !empty($data["password"])){
-        if(strlen($data["password"]) < 6) return services_error(t("The password should be at least 6 character!") , 16);
+        if($account->pass != user_hash_password(trim($data["current_password"]))){
+            return services_error("Current Password is not correct!" , 403);
+        }
+        if(strlen($data["password"]) < 6) return services_error("The password should be at least 6 character!" , 403);
         require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
-        $account->pass = user_hash_password(trim($data['password']));
+        $account->pass = user_hash_password(trim($data["password"]));
     }
     if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
     if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
@@ -198,23 +201,56 @@ function user_resource_update_data($data , $uid){
     /*adding or updating user's jobs*/
     if (isset($data["jobs"]) && !empty($data["jobs"])) {
         $job = $data["jobs"];
+
+        if(!empty($job["start"])){
+            if($job["start"] == "-1")
+                $start = -1;
+            else{
+                $start = explode("-" , $job["start"]);
+                if(count($start) == 3){
+                    $start = mktime(0, 0, 0, $start[1], $start[2], $start[0]);
+                }else{
+                    $start = 0;
+                }
+            }
+        }
+        else{
+            $start = 0;
+        }
+
+        if(!empty($job["end"])){
+            if($job["end"] == "-1")
+                $end = -1;
+            else{
+                $end = explode("-" , $job["end"]);
+                if(count($end) == 3){
+                    $end = mktime(0, 0, 0, $end[1], $end[2], $end[0]);
+                }else{
+                    $end = 0;
+                }
+            }
+        }
+        else{
+            $end = 0;
+        }
+
         /*check if user wants to update previous data or inserts new one*/
         if (isset($job["jid"]) && !empty($job["jid"])) {
             /*check if user wants to delete his jobs or update them*/
             if(isset($job["delete"]) && $job["delete"] == 1){
-                $delete = db_delete("user_jobs")
+                db_delete("user_jobs")
                     ->condition("jid" , $job["jid"])
                     ->condition("uid" , $uid)
                     ->execute();
             }
             else{
-                $update = db_update("user_jobs")
+                db_update("user_jobs")
                     ->fields(array(
                         'title' => $job["title"],
                         'position' => empty($job["position"]) ? null :$job["position"],
                         'location' => empty($job["location"]) ? null :$job["location"],
-                        'start' => empty($job["start"]) ? 0 :$job["start"],
-                        'end' => empty($job["end"]) ? 0 :$job["end"],
+                        'start' => $start,
+                        'end' => $end,
                         'description' => empty($job["description"]) ? null :$job["description"],
                     ))
                     ->condition("jid" , $job["jid"])
@@ -224,15 +260,15 @@ function user_resource_update_data($data , $uid){
 
         }
         else {
-            $jid = db_insert("user_jobs")
+            db_insert("user_jobs")
                 ->fields(array(
                     'uid' => $uid,
                     'type' => $job["type"],
                     'title' => $job["title"],
                     'position' => empty($job["position"]) ? null :$job["position"],
                     'location' => empty($job["location"]) ? null :$job["location"],
-                    'start' => empty($job["start"]) ? 0 :$job["start"],
-                    'end' => empty($job["end"]) ? 0 :$job["end"],
+                    'start' => $start,
+                    'end' => $end,
                     'description' => empty($job["description"]) ? null :$job["description"],
                 ))
                 ->execute();
@@ -303,11 +339,11 @@ function login($data){
 function user_resource_register($data){
     if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
 
-    if(!isset($data['username']) || empty($data['username'])) return services_error(t("Username is required!") , 401);
-    if(!isset($data['password']) || empty($data['password'])) return services_error(t("Password is required!") , 401);
-    if(!isset($data['email']) || empty($data['email'])) return services_error(t("Email is required!") , 401);
-    if(!isset($data['full_name']) || empty($data['full_name'])) return services_error(t("Full name is required!") , 401);
-    if(!isset($data['reCaptchaToken']) || empty($data['reCaptchaToken'])) return services_error(t("ReCaptcha is required!") , 401);
+    if(!isset($data['username']) || empty($data['username'])) return services_error(t("Username is required!") , 403);
+    if(!isset($data['password']) || empty($data['password'])) return services_error(t("Password is required!") , 403);
+    if(!isset($data['email']) || empty($data['email'])) return services_error(t("Email is required!") , 403);
+    if(!isset($data['full_name']) || empty($data['full_name'])) return services_error(t("Full name is required!") , 403);
+    if(!isset($data['reCaptchaToken']) || empty($data['reCaptchaToken'])) return services_error(t("ReCaptcha is required!") , 403);
 
     $captcha = reCaptcha($data["reCaptchaToken"]);
     if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
@@ -393,6 +429,35 @@ function user_resource_insert_interests($data){
 
     return true;
 }
+
+function user_resource_reset_password($data){
+    if(!isset($data["hash"]) || !(hash_true($data["hash"] , "user"))) return services_error(t('Failed to access'), 403);
+    if(!isset($data["email"]) || empty($data["email"])) return services_error("Email is Required!" , 403);
+    global $user;
+    if($user->uid > 0) return services_error("Illegal action!" , 403);
+
+    /*check re captcha*/
+    $captcha = reCaptcha($data["reCaptchaToken"]);
+    if($data["reCaptchaToken"] == "admin@ed808") $captcha = true;
+    if($captcha == false) return services_error("ReCaptcha Error!" , 401);
+
+    $uid = db_select("users", "user")->fields("user" , array("uid"))->condition("mail" , $data["email"])->execute()->fetch();
+    if(empty($uid)) return services_error("User Not Found!" , 404);
+    $uid = $uid->uid;
+    $account = user_load($uid);
+    $pass = user_password();
+    require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
+    $account->pass = user_hash_password($pass);
+
+    user_save($account);
+
+    $subject = "New Password";
+    $body = "Dear " . $account->field_full_name["und"][0]["value"] . "<br>";
+    $body .= "Your password has been change <br>";
+    $body .= "Your new Password is: " . $pass;
+    simple_mail_send("" , $account->mail , $subject , $body);
+    return true;
+}
 /*---------------------relationships part------------------------------*/
 function user_resource_nav_bar_info($parameter , $login){
     global $user;
@@ -407,6 +472,15 @@ function user_resource_nav_bar_info($parameter , $login){
     $query->condition("full_name.entity_id" , $user->uid)->condition("full_name.entity_type" , "user");
     $full_name = $query->execute()->fetch();
 
+
+    $roles = array(["rid" => "2", "name" => "known user"]);
+    $query = db_select("users_roles" , "user_role");
+    $query->condition("user_role.uid" , $user->uid);
+    $query->join("role" , "role" , "role.rid = user_role.rid");
+    $query->fields("role" , array("rid" , "name"));
+    $roles = array_merge($roles , $query->execute()->fetchAll());
+
+
     module_load_include("inc" , "services" , "resources/user_resource");
     $token = _user_resource_get_token();
     $result = array();
@@ -415,6 +489,7 @@ function user_resource_nav_bar_info($parameter , $login){
     $result["full_name"] = $full_name->full_name;
     if(!empty($picture)) $result["picture"] = image_style_url("200x200", $picture->uri);
     $result["token"] = $token["token"];
+    $result["role"] = $roles;
     return $result;
 }
 
