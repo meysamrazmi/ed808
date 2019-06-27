@@ -393,6 +393,12 @@ function user_resource_register($data){
         'field_laws' => array('und' => array(0 => array('value' => 1))),
         'field_full_name' => array('und' => array(0 => array('value' => $data["full_name"]))),
     );
+    if(isset($data["mobile"]) && !empty($data["mobile"])){
+        $new_user['field_mobile'] = array('und' => array(0 => array('value' => $data["mobile"])));
+    }
+    if(isset($data["country"]) && !empty($data["country"])){
+        $new_user['field_country'] = array('und' => array(0 => array('value' => $data["country"])));
+    }
 
     return (array) register($new_user);
 }
