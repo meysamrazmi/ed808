@@ -173,7 +173,7 @@ function tag_resource_followers($parameter, $tid){
     $followers = $query->execute()->fetchAll();
 
     foreach ($followers as $follower){
-        if(!empty($follower->picture)) $follower->picture = image_style_url("60x60" , $follower->picture);
+        if(!empty($follower->picture)) $follower->picture = image_style_url("media_thumbnail" , $follower->picture);
 
         if($user->uid != $follower->uid){
             $follower->user_follow = is_flagged($user->uid , $follower->uid , "user");

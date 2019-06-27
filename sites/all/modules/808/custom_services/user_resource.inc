@@ -18,28 +18,35 @@ function user_resource_retrieve($uid , $parameter){
     $query->leftJoin("field_data_field_about_me" , "about_me" , "user.uid = about_me.entity_id");
     $query->addField("about_me" , "field_about_me_value" , "about");
 
-    $query->leftJoin("field_data_field_university" , "university" , "user.uid = university.entity_id");
-    $query->addField("university" , "field_university_value" , "university");
+    $query->leftJoin("field_data_field_mobile" , "mobile" , "user.uid = mobile.entity_id");
+    $query->addField("mobile" , "field_mobile_value" , "mobile");
 
-    $query->leftJoin("field_data_field_education_field" , "education_field" , "user.uid = education_field.entity_id");
-    $query->addField("education_field" , "field_education_field_value" , "education_field");
+    $query->leftJoin("field_data_field_country" , "country" , "user.uid = country.entity_id");
+    $query->addField("country" , "field_country_value" , "country");
 
-    $query->leftJoin("field_data_field_education_degree" , "education_degree" , "user.uid = education_degree.entity_id");
-    $query->addField("education_degree" , "field_education_degree_value" , "education_degree");
-
-    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
-    $query->addField("job" , "field_job_value" , "job");
+    $query->leftJoin("field_data_field_birthday" , "birthday" , "user.uid = birthday.entity_id");
+    $query->addField("birthday" , "field_birthday_value" , "birthday");
 
     $query->leftJoin("field_data_field_skills" , "skills" , "user.uid = skills.entity_id");
     $query->addField("skills" , "field_skills_value" , "skills");
-
-    $query->leftJoin("field_data_field_mobile" , "mobile" , "user.uid = mobile.entity_id");
-    $query->addField("mobile" , "field_mobile_value" , "mobile");
 
     $query->leftJoin("field_data_field_files" , "field_files" , "user.uid = field_files.entity_id and field_files.entity_type = 'user' ");
     $query->leftJoin("file_managed" , "cv" , "cv.fid = field_files.field_files_fid");
     $query->addField("cv" , "uri" , "cv");
     $query->addField("cv" , "origname" , "cvName");
+
+
+
+    $query->leftJoin("field_data_field_university" , "university" , "user.uid = university.entity_id");
+    $query->addField("university" , "field_university_value" , "university");
+    $query->leftJoin("field_data_field_education_field" , "education_field" , "user.uid = education_field.entity_id");
+    $query->addField("education_field" , "field_education_field_value" , "education_field");
+    $query->leftJoin("field_data_field_education_degree" , "education_degree" , "user.uid = education_degree.entity_id");
+    $query->addField("education_degree" , "field_education_degree_value" , "education_degree");
+    $query->leftJoin("field_data_field_job" , "job" , "user.uid = job.entity_id");
+    $query->addField("job" , "field_job_value" , "job");
+
+
 
     $account = $query->execute()->fetch();
 
@@ -139,17 +146,18 @@ function user_resource_update_data($data , $uid){
         else return services_error(t("This Email is already taken!") , 18);
     }
     if(isset($data["password"]) && !empty($data["password"])){
-        if($account->pass != user_hash_password(trim($data["current_password"]))){
+        require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
+        if(!user_check_password(trim($data["current_password"]) , $account)){
             return services_error("Current Password is not correct!" , 403);
         }
         if(strlen($data["password"]) < 6) return services_error("The password should be at least 6 character!" , 403);
-        require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
         $account->pass = user_hash_password(trim($data["password"]));
     }
     if(isset($data["full_name"]) && strlen($data["full_name"]) > 0) $account->field_full_name["und"][0]["value"] = $data["full_name"];
     if(isset($data["mobile"])) $account->field_mobile["und"][0]["value"] = $data["mobile"];
     if(isset($data["country"])) $account->field_country["und"][0]["value"] = $data["country"];
     if(isset($data["about"])) $account->field_about_me["und"][0]["value"] = $data["about"];
+    if(isset($data["birthday"]) && !empty($data["birthday"])) $account->field_birthday["und"][0]["value"] = $data["birthday"];
     if(isset($data["laws"]) && $data["laws"] == 1) $account->field_laws["und"][0]["value"] = 1;
     if(isset($data["picture"]) || (!empty($data["picture"]) && strcmp($data["picture"]["type"] , "image") == 0)){
         $old_pic_fid = isset($account->picture->fid) ? $account->picture->fid : 0;
@@ -247,10 +255,10 @@ function user_resource_update_data($data , $uid){
                 db_update("user_jobs")
                     ->fields(array(
                         'title' => $job["title"],
-                        'position' => empty($job["position"]) ? null :$job["position"],
-                        'location' => empty($job["location"]) ? null :$job["location"],
-                        'start' => $start,
-                        'end' => $end,
+                        'position' => empty($job["position"]) ? null : $job["position"],
+                        'location' => empty($job["location"]) ? null : $job["location"],
+                        'start' => empty($job["start"]) ? 0 : $job["start"],
+                        'end' => empty($job["end"]) ? 0 : $job["end"],
                         'description' => empty($job["description"]) ? null :$job["description"],
                     ))
                     ->condition("jid" , $job["jid"])
@@ -265,11 +273,11 @@ function user_resource_update_data($data , $uid){
                     'uid' => $uid,
                     'type' => $job["type"],
                     'title' => $job["title"],
-                    'position' => empty($job["position"]) ? null :$job["position"],
-                    'location' => empty($job["location"]) ? null :$job["location"],
-                    'start' => $start,
-                    'end' => $end,
-                    'description' => empty($job["description"]) ? null :$job["description"],
+                    'position' => empty($job["position"]) ? null : $job["position"],
+                    'location' => empty($job["location"]) ? null : $job["location"],
+                    'start' => empty($job["start"]) ? 0 : $job["start"],
+                    'end' => empty($job["end"]) ? 0 : $job["end"],
+                    'description' => empty($job["description"]) ? null : $job["description"],
                 ))
                 ->execute();
         }
