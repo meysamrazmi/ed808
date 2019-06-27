@@ -1273,3 +1273,21 @@ function is_flagged($viewer_uid , $object_id , $entity){
 
     return true;
 }
+
+function add_log($uid, $action, $url = "", $method = "", $entity_type = "", $bundle = "", $entity_id = 0, $status, $description){
+    $log = db_insert("user_log")
+        ->fields(array(
+            "uid" => $uid,
+            "action" => $action,
+            "url" => $url,
+            "method" => $method,
+            "entity_type" => $entity_type,
+            "bundle" => $bundle,
+            "entity_id" => $entity_id,
+            "status" => $status,
+            "description" => $description,
+            "time" => REQUEST_TIME
+        ))->execute();
+
+    return $log;
+}

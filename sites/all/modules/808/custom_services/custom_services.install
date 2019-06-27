@@ -451,6 +451,99 @@ function custom_services_update_7109(){
     db_create_table('user_socials', $schema['user_socials']);
 }
 
+/**
+ * Create new database table {user_log}.
+ */
+function custom_services_update_7110() {
+    $schema['user_log'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => t('Primary Key : id'),
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+                'default' => 0,
+                'description' => t('User id'),
+            ),
+            'action' => array(
+                'type' => 'varchar',
+                'length' => 256,
+                'not null' => TRUE,
+                'default' => '',
+                'description' => t("The action"),
+            ),
+            'url' => array(
+                'type' => 'varchar',
+                'length' => 100,
+                'not null' => False,
+                'default' => '',
+                'description' => t('url of action'),
+            ),
+            'method' => array(
+                'type' => 'varchar',
+                'length' => 50,
+                'not null' => False,
+                'default' => '',
+                'description' => t('method of url'),
+            ),
+            'entity_type' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => False,
+                'default' => '',
+                'description' => t('The entity type'),
+            ),
+            'bundle' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => False,
+                'default' => '',
+                'description' => t('The bundle of entity type'),
+            ),
+            'entity_id' => array(
+                'type' => 'int',
+                'not null' => False,
+                'unsigned' => TRUE,
+                'default' => 0,
+                'description' => t('The id of the entity that user has effected on it'),
+            ),
+            'status' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => TRUE,
+                'default' => '',
+                'description' => t("status of action"),
+            ),
+            'description' => array(
+                'type' => 'text',
+                'size' => 'normal',
+                'not null' => TRUE,
+                'description' => t('description'),
+            ),
+            'time' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+                'description' => 'Timestamp for when an action has been happened.',
+            ),
+        ),
+
+        'primary key' => array('id'),
+        'foreign keys' => array(
+            'uid' => array(
+                'table' => 'users',
+                'columns' => array('uid' => 'uid'),
+            ),
+        ),
+    );
+    db_create_table('user_log', $schema['user_log']);
+}
+
 /*
  * Implementation of hook_install()
 */

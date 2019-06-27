@@ -340,7 +340,10 @@ function login($data){
     $db_or->condition('user.mail', $data["username_email"] , 'LIKE');
     $query->condition($db_or);
     $result = $query->execute()->fetchObject();
-    if(empty($result))return services_error(t("User is not found with this credential!") , 404);
+    if(empty($result)){
+        add_log($user->uid, "login", "/user/login", "POST", "user", "user", 0, "error", "user not found!");
+        return services_error(t("User is not found with this credential!") , 404);
+    }
     elseif($result->status == 0)return services_error(t("User is inactive!") , 403);
     else $username = $result->name;
 
@@ -362,9 +365,11 @@ function login($data){
             $login_data->full_name = !empty($user->field_full_name) ? $user->field_full_name["und"][0]["value"] : null;
             if(!empty($user->picture)) $login_data->picture =  image_style_url("200x200", $user->picture->uri);
             $login_data->token = drupal_get_token('services');
+            add_log($user->uid, "login", "/user/login", "POST", "user", "user", $user->uid, "successful", "login completed!");
             return $login_data;
         }
     }
+    add_log($user->uid, "login", "/user/login", "POST", "user", "user", 0, "error", "password is wrong!");
     return services_error(t('Wrong username or password!') , 401);
 }
 
@@ -405,7 +410,7 @@ function user_resource_register($data){
 function register($new_user){
     /*check if user is logged in!*/
     global $user;
-    if($user->uid > 0) return services_error(t("User is already logged in!") , 18);
+    if($user->uid > 0) return services_error(t("User is already logged in!") , 403);
 
     /*check if this username or email is duplicate*/
     $query = db_select("users", "user");
@@ -415,7 +420,10 @@ function register($new_user){
     $db_or->condition('user.mail', $new_user['mail'] , 'LIKE');
     $query->condition($db_or);
     $result = $query->execute()->fetchObject();
-    if(!empty($result)) return services_error(t("A user with this username Email is already exist!") , 18);
+    if(!empty($result)) {
+        add_log($user->uid, "register", "/user/register", "POST", "user", "user", 0, "error", "user has already exist!");
+        return services_error(t("A user with this username or Email already exists!") , 403);
+    }
 
     /*create new user*/
     $user = user_save('' , $new_user);
@@ -428,7 +436,7 @@ function register($new_user){
     $newUser->username = $user->name;
     $newUser->full_name = !empty($user->field_full_name) ? $user->field_full_name["und"][0]["value"] : null;
     $newUser->token = drupal_get_token('services');
-
+    add_log($user->uid, "register", "/user/register", "POST", "user", "user", $user->uid, "successful", "register completed!");
     return $newUser;
 }
 
