@@ -384,6 +384,73 @@ function custom_services_update_7108(){
     db_create_table('user_jobs', $schema['user_jobs']);
 }
 
+/**
+ * Create new database table {user_socials}.
+ */
+function custom_services_update_7109(){
+    $schema['user_socials'] = array(
+        'fields' => array(
+            'sid' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => 'Primary Key - id',
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'description' => t('User id'),
+            ),
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 60,
+                'not null' => True,
+                'description' => 'The name of the social',
+            ),
+            'link' => array(
+                'type' => 'varchar',
+                'length' => 256,
+                'not null' => True,
+                'description' => 'The link of the social',
+            ),
+            'created' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when the social has created.',
+                'default' => 0
+            ),
+            'changed' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when the social has changed.',
+                'default' => 0
+            ),
+            'deleted' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'description' => 'Timestamp for when the social has deleted.',
+                'default' => 0
+            ),
+            'description' => array(
+                'type' => 'text',
+                'size' => 'normal',
+                'not null' => False,
+                'description' => 'The description of the social',
+            ),
+        ),
+
+        'primary key' => array('sid'),
+        'foreign keys' => array(
+            'uid' => array(
+                'table' => 'users',
+                'columns' => array('uid' => 'uid'),
+            ),
+        ),
+    );
+    db_create_table('user_socials', $schema['user_socials']);
+}
+
 /*
  * Implementation of hook_install()
 */

@@ -76,6 +76,15 @@ function user_resource_retrieve($uid , $parameter){
         $account->jobs = array();
     }
 
+    $query = db_select("user_socials" , "social");
+    $query->fields("social" , array("sid" , "name" , "link"));
+    $query->condition("social.uid" , $uid);
+    $query->condition("social.deleted" , 0);
+    $query->orderBy("social.name" , "DESC")->orderBy("social.created" , "DESC");
+    $socials_data = $query->execute()->fetchAll();
+    $account->socials = empty($socials_data) ? array() : $socials_data;
+
+
     $account->created = date("F j, Y" , $account->created);
     $account->login = date("F j, Y" , $account->login);
 
@@ -147,7 +156,7 @@ function user_resource_update_data($data , $uid){
     }
     if(isset($data["password"]) && !empty($data["password"])){
         require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
-        if(!user_check_password(trim($data["current_password"]) , $account)){
+        if((!isset($data["from_linkedin"]) && $data["from_linkedin"] != true) && !user_check_password(trim($data["current_password"]) , $account)){
             return services_error("Current Password is not correct!" , 403);
         }
         if(strlen($data["password"]) < 6) return services_error("The password should be at least 6 character!" , 403);
@@ -210,42 +219,10 @@ function user_resource_update_data($data , $uid){
     if (isset($data["jobs"]) && !empty($data["jobs"])) {
         $job = $data["jobs"];
 
-        if(!empty($job["start"])){
-            if($job["start"] == "-1")
-                $start = -1;
-            else{
-                $start = explode("-" , $job["start"]);
-                if(count($start) == 3){
-                    $start = mktime(0, 0, 0, $start[1], $start[2], $start[0]);
-                }else{
-                    $start = 0;
-                }
-            }
-        }
-        else{
-            $start = 0;
-        }
-
-        if(!empty($job["end"])){
-            if($job["end"] == "-1")
-                $end = -1;
-            else{
-                $end = explode("-" , $job["end"]);
-                if(count($end) == 3){
-                    $end = mktime(0, 0, 0, $end[1], $end[2], $end[0]);
-                }else{
-                    $end = 0;
-                }
-            }
-        }
-        else{
-            $end = 0;
-        }
-
         /*check if user wants to update previous data or inserts new one*/
         if (isset($job["jid"]) && !empty($job["jid"])) {
             /*check if user wants to delete his jobs or update them*/
-            if(isset($job["delete"]) && $job["delete"] == 1){
+            if(isset($job["delete"]) && $job["delete"] == true){
                 db_delete("user_jobs")
                     ->condition("jid" , $job["jid"])
                     ->condition("uid" , $uid)
@@ -278,6 +255,53 @@ function user_resource_update_data($data , $uid){
                     'start' => empty($job["start"]) ? 0 : $job["start"],
                     'end' => empty($job["end"]) ? 0 : $job["end"],
                     'description' => empty($job["description"]) ? null : $job["description"],
+                ))
+                ->execute();
+        }
+    }
+
+    /*adding or updating user's socials*/
+    if (isset($data["socials"]) && !empty($data["socials"])) {
+        $socials = $data["socials"];
+
+        /*check if user wants to update previous data or inserts new one*/
+        if (isset($socials["sid"]) && !empty($socials["sid"])) {
+            /*check if user wants to delete his jobs or update them*/
+            if(isset($socials["delete"]) && $socials["delete"] == true){
+                db_update("user_socials")
+                    ->fields(array(
+                        'deleted' => REQUEST_TIME,
+                    ))
+                    ->condition("sid" , $socials["sid"])
+                    ->condition("uid" , $uid)
+                    ->condition("deleted" , 0)
+                    ->execute();
+            }
+            else{
+                db_update("user_socials")
+                    ->fields(array(
+                        'name' => $socials["name"],
+                        'link' => $socials["link"],
+                        'changed' => REQUEST_TIME,
+                        'description' => empty($socials["description"]) ? null :$socials["description"],
+                    ))
+                    ->condition("sid" , $socials["sid"])
+                    ->condition("uid" , $uid)
+                    ->condition("deleted" , 0)
+                    ->execute();
+            }
+
+        }
+        else {
+            db_insert("user_socials")
+                ->fields(array(
+                    'uid' => $uid,
+                    'name' => $socials["name"],
+                    'link' => $socials["link"],
+                    'created' => REQUEST_TIME,
+                    'changed' => REQUEST_TIME,
+                    'deleted' => 0,
+                    'description' => empty($socials["description"]) ? null : $socials["description"],
                 ))
                 ->execute();
         }
