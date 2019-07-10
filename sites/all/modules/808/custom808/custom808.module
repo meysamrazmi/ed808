@@ -193,3 +193,12 @@ function adump($var){
 		die();
  	}
 }
+function hdump($var){
+	global $user;
+	if($user->uid == 744){
+ 		echo '<pre>';
+		print_r($var);
+		echo '</pre>';
+		die();
+ 	}
+}

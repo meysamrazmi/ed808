@@ -39,6 +39,10 @@
         </div>
         <div id="main">
           <?php print $body ?>
+
+            <div class="ed808">
+                <strong>ED808</strong> - International Social Network of Civil Engineers and Architects
+            </div>
         </div>
       <div id="footer-mail">
 <!--            <div class="first-row">-->
